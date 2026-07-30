@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Moon Lab</title>
+<style>
+:root{
+  --ink:#080D1A; --panel:#0D1424; --line:#232F49; --bone:#E9E7DF;
+  --dim:#7F8CAB; --lune:#BCD2F2; --ember:#E4863C;
+  --mono: ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --disp:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--ink);
+  color:var(--bone);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-text-size-adjust:100%}
+#app{display:flex;flex-direction:column;height:100dvh;max-width:760px;margin:0 auto;position:relative}
+
+#top{display:flex;align-items:baseline;gap:.55rem;padding:.5rem .8rem .3rem;flex:none}
+#top h1{font-family:var(--disp);font-weight:400;font-size:.95rem;margin:0;letter-spacing:-.01em;flex:none}
+#top h1 em{font-style:italic;color:var(--lune)}
+#gear{flex:none;background:none;border:1px solid var(--line);color:var(--dim);border-radius:2px;
+  font-family:var(--mono);font-size:.6rem;padding:.26rem .42rem;cursor:pointer}
+#gear:focus-visible,#tl:focus-visible{outline:2px solid var(--ember);outline-offset:2px}
+
+#bar{flex:none;display:flex;align-items:stretch;gap:.4rem;padding:.15rem .7rem .5rem}
+#tlwrap{flex:1;min-width:0;border:1px solid var(--line);border-radius:2px;overflow:hidden;
+  touch-action:none;cursor:ew-resize}
+#tl{display:block;width:100%;height:54px}
+button.t{font-family:var(--mono);font-size:.62rem;background:var(--panel);color:var(--bone);
+  border:1px solid var(--line);border-radius:2px;padding:0 .5rem;cursor:pointer;flex:none;min-width:2.2rem}
+button.t.on{background:var(--lune);color:#08101F;border-color:var(--lune)}
+button.t:focus-visible{outline:2px solid var(--ember);outline-offset:2px}
+
+#stage{flex:1;min-height:0;display:flex;flex-direction:column;gap:1px;background:var(--line);
+  touch-action:none;cursor:ew-resize;user-select:none;-webkit-user-select:none}
+#skywrap{flex:1.5;min-height:0}
+#eclwrap{flex:1;min-height:0}
+#skywrap,#eclwrap{position:relative;overflow:hidden}
+#skywrap canvas,#eclwrap canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#hint{position:absolute;left:50%;transform:translateX(-50%);bottom:5px;font-family:var(--mono);
+  font-size:.57rem;color:rgba(190,212,244,.45);pointer-events:none;letter-spacing:.05em;
+  transition:opacity .4s}
+
+#scrim{position:fixed;inset:0;background:rgba(4,8,16,.6);opacity:0;pointer-events:none;
+  transition:opacity .2s;z-index:30}
+#scrim.on{opacity:1;pointer-events:auto}
+#sheet{position:fixed;left:0;right:0;bottom:0;max-width:760px;margin:0 auto;z-index:31;
+  background:var(--panel);border-top:1px solid var(--line);border-radius:10px 10px 0 0;
+  transform:translateY(101%);transition:transform .26s cubic-bezier(.2,.8,.2,1);
+  max-height:86dvh;overflow-y:auto;overscroll-behavior:contain;padding:.5rem 0 1.6rem}
+#sheet.open{transform:translateY(0)}
+#grip{width:34px;height:4px;background:var(--line);border-radius:2px;margin:.3rem auto .7rem}
+#sheet h3{font-family:var(--mono);font-size:.6rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--dim);font-weight:500;margin:1.1rem .9rem .45rem;display:flex;align-items:center;gap:.5rem}
+#sheet h3::after{content:"";flex:1;height:1px;background:var(--line)}
+.row{display:flex;gap:.5rem;align-items:center;padding:0 .9rem}
+select{flex:1;font-family:var(--mono);font-size:.72rem;background:var(--ink);color:var(--bone);
+  border:1px solid var(--line);border-radius:2px;padding:.5rem}
+.seg{display:flex;flex:1}
+.seg button{flex:1;border-radius:0;min-width:0;padding:.5rem .2rem}
+.seg button:first-child{border-radius:2px 0 0 2px}
+.seg button:last-child{border-radius:0 2px 2px 0}
+.seg button:not(:first-child){border-left:none}
+.chart{margin:.5rem .9rem 0;border:1px solid var(--line);border-radius:2px;overflow:hidden}
+.chart canvas{display:block;width:100%;height:132px}
+p.n{color:var(--dim);font-size:.74rem;line-height:1.55;margin:.55rem .9rem 0}
+p.n b{color:var(--bone);font-weight:600}
+p.n a{color:var(--lune)}
+p.n code{font-family:var(--mono);font-size:.9em;color:var(--lune)}
+.lg{font-family:var(--mono);font-size:.6rem;color:var(--dim);padding:.4rem .9rem 0;display:flex;
+  gap:.9rem;flex-wrap:wrap}
+.lg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:.25rem}
+#stamp{font-family:var(--mono);font-size:.66rem;color:var(--dim);margin-left:auto;background:none;
+  border:none;padding:.1rem 0;cursor:pointer;font-variant-numeric:tabular-nums;white-space:nowrap;
+  border-bottom:1px dotted var(--line);overflow:hidden;text-overflow:ellipsis}
+#stamp:hover{color:var(--bone)}
+#stamp:focus-visible{outline:2px solid var(--ember);outline-offset:2px}
+#datepop{position:absolute;right:.8rem;top:2.2rem;z-index:25;display:flex;gap:.35rem;
+  background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:.4rem}
+#datepop input{font-family:var(--mono);font-size:.72rem;background:var(--ink);color:var(--bone);
+  border:1px solid var(--line);border-radius:2px;padding:.35rem}
+#tip{position:fixed;z-index:60;max-width:min(20rem,70vw);background:#0B1220;color:var(--bone);
+  border:1px solid var(--line);border-radius:3px;padding:.4rem .55rem;font-size:.7rem;line-height:1.4;
+  pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+@media (prefers-reduced-motion:reduce){#sheet,#scrim,#hint{transition:none}}
+</style>
+<meta name="apple-mobile-web-app-title" content="Moon Lab">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#080D1A">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23080D1A'/%3E%3Ccircle cx='104' cy='84' r='42' fill='%23E9E7DF'/%3E%3Ccircle cx='80' cy='78' r='40' fill='%23080D1A'/%3E%3Cpath d='M0 150 Q90 128 180 150 L180 180 L0 180Z' fill='%23132135'/%3E%3C/svg%3E">
+
+</head>
+<body>
+<div id="app">
+  <div id="top">
+    <h1>Moon <em>Lab</em></h1>
+    <button id="stamp" aria-haspopup="dialog" aria-expanded="false" title="Tap to jump to a date">–</button>
+    <button id="gear" aria-expanded="false" aria-controls="sheet" title="Place, speed, charts and notes">more</button>
+  </div>
+
+  <div id="datepop" hidden role="dialog" aria-label="Jump to a date">
+    <input type="datetime-local" id="dtin" aria-label="Date and time">
+    <button class="t" id="dtgo">go</button>
+  </div>
+
+  <div id="bar">
+    <button class="t" id="play" aria-label="Play" title="Run time forward">▶</button>
+    <div id="tlwrap"><canvas id="tl" tabindex="0" role="slider" aria-label="Time" title="Drag to move through the year. Arrow keys nudge an hour, shift+arrow a day"></canvas></div>
+    <button class="t" id="bnow" title="Back to now">now</button>
+  </div>
+
+  <div id="stage">
+    <div id="skywrap"><canvas id="sky"></canvas></div>
+    <div id="eclwrap"><canvas id="ecl"></canvas>
+      <span id="hint">swipe sideways to move time · tap anything to name it</span>
+    </div>
+  </div>
+</div>
+
+<div id="tip" hidden></div>
+<div id="scrim"></div>
+<div id="sheet" role="dialog" aria-label="Settings and explanations">
+  <div id="grip"></div>
+
+  <h3>From where you look at the sky</h3>
+  <div class="row"><select id="place" aria-label="Place"></select></div>
+  <div class="row" style="margin-top:.45rem">
+    <button class="t" id="locate" style="flex:1;padding:.55rem" title="Ask this device for your coordinates">use my location</button>
+  </div>
+  <p class="n" id="locnote" style="font-family:var(--mono);font-size:.62rem"></p>
+  <p class="n">The name is matched against a list of cities built into this file, so your coordinates never leave the browser. A nearest-city lookup against a real gazetteer would mean sending them to someone else's server, which this does not do.</p>
+
+  <h3>Moon size on screen</h3>
+  <div class="row"><div class="seg">
+    <button class="t" data-mag="1" title="The Moon at its real angular size — about half a degree">true</button>
+    <button class="t on" data-mag="20">×20</button>
+    <button class="t" data-mag="45">×45</button>
+  </div></div>
+
+  <h3>Playback speed</h3>
+  <div class="row"><div class="seg">
+    <button class="t" data-speed="0.5" title="About a day every 45 seconds">slow</button>
+    <button class="t on" data-speed="2" title="About a day every 12 seconds">medium</button>
+    <button class="t" data-speed="10" title="About a day every 2 seconds">fast</button>
+  </div></div>
+
+  <h3>Every full moon this year</h3>
+  <div class="chart"><canvas id="ychart"></canvas></div>
+  <div class="lg">
+    <span><i style="background:#BCD2F2"></i>apparent size</span>
+    <span><i style="background:#E4863C"></i>height in the sky</span>
+    <span>tap a bar to jump</span>
+  </div>
+  <p class="n">The <b>ember line</b> collapses in June and July: the full moon then sits opposite a high sun and crawls along the southern horizon. That low pass is what makes it look huge and turn orange. The <b>blue bars</b> — the real angular size — ignore the calendar entirely.</p>
+
+  <h3>Why most months have no eclipse</h3>
+  <div class="chart"><canvas id="tilt"></canvas></div>
+  <p class="n">The Moon's orbit is tilted 5.1°, so at new moon its shadow usually passes above or below Earth. Only near a crossing point can an eclipse happen — twice a year, not twelve times.</p>
+
+  <h3>Saving this to your Home Screen</h3>
+  <p class="n">Safari takes the name and address from the <b>page</b> it is showing, and here that page is claude.ai — this runs inside a frame on it. No tag inside the frame can change that, so the shortcut will always say Claude.</p>
+  <p class="n">To get a real icon: download this file and serve it as its own page from any static host. It already carries <code>apple-mobile-web-app-title</code>, <code>apple-mobile-web-app-capable</code> and an icon, so Add to Home Screen will then name it <b>Moon Lab</b> and open it full-screen.</p>
+
+  <h3>Where the numbers come from</h3>
+  <p class="n">Nothing is fetched or pre-tabulated. Every position is evaluated in the browser from series expansions, for the exact instant on the timeline. That is why you can scrub to any date in any year and it still answers — and why everything below is worth being precise about.</p>
+
+  <h3>Positions</h3>
+  <p class="n"><b>Moon:</b> Meeus, <i>Astronomical Algorithms</i> ch. 47 — the full 60-term longitude and distance table, the 60-term latitude table, and the A₁/A₂/A₃ additive terms. Meeus quotes about 10″ in longitude and 4″ in latitude. This implementation reproduces his worked example 47.a to every published digit.</p>
+  <p class="n"><b>Sun:</b> Meeus ch. 25, the low-precision series: roughly 0.01° in longitude, good for about 1950–2050 and degrading outside it.</p>
+  <p class="n"><b>Time:</b> the clock gives Universal Time; the series want Terrestrial Time. ΔT is added using the Espenak &amp; Meeus polynomials, which return 75 s for 2026 where the observed value is nearer 69 s — the fit predates the Earth's recent slight speed-up. Six seconds is 3″ of lunar motion, so it does not matter here; for dates far outside 1900–2150, ΔT itself becomes the largest unknown.</p>
+  <p class="n"><b>Deliberately not modelled:</b> nutation (up to 17″), solar aberration (about 20″, so the Sun's longitude is geometric rather than apparent), light-time to the Moon (about 0.7″), and the equation of the equinoxes in sidereal time (up to 17″). Together these are the same size as the truncation error. Nothing here is fit for occultation timing or grazing eclipse work.</p>
+
+  <h3>You, the observer</h3>
+  <p class="n">Parallax is applied for a surface observer on the 1976 reference ellipsoid (flattening 1/298.257), eye height taken as sea level. Refraction uses Bennett's 1982 formula, which assumes 1010 hPa and 10 °C; real horizon refraction swings by several arcminutes with the weather, so rise and set times carry a minute or two of honest uncertainty that no formula removes. Rise and set mean the apparent altitude of the body's centre equals minus its own semidiameter — upper limb on the visible horizon.</p>
+
+  <h3>Phase and size</h3>
+  <p class="n">Illuminated fraction comes from the geocentric phase angle (Meeus ch. 48); a topocentric one would differ by well under 0.1%. Apparent diameter is 2·atan(1737.4 km ÷ topocentric distance), using the Moon's mean radius. New and full moon instants are solved by Newton iteration on the difference in ecliptic longitude, and agree with NASA's published times for the November and December 2026 supermoons to within a minute. The small phase glyphs on the timeline use a cheaper formula that ignores the Sun's finite distance — up to 0.5% off, which is invisible at five pixels and is used for nothing else.</p>
+
+  <h3>Colour</h3>
+  <p class="n">Air mass follows Kasten &amp; Young (1989). Extinction uses 0.30, 0.20 and 0.12 magnitudes per air mass in blue, visual and red — typical clear low-altitude values, a convention rather than a standard, and wildly variable with haze. The Moon's colour is then normalised so its brightest channel stays full, which means <b>you are seeing the hue shift correctly and the dimming not at all</b>: the real Moon at six air masses is more than a magnitude fainter. Sky colours are a hand-tuned ramp keyed to solar altitude, not radiative transfer.</p>
+
+  <h3>The stars</h3>
+  <p class="n">About fifty bright stars at their J2000 positions, entered by hand and good to a fraction of a degree, turning with the Earth exactly as the real sky does. No precession is applied from J2000 to the displayed date (0.36° by 2026) and no proper motion; both are under a pixel here. No extinction is applied to stars, so unlike the Moon they do not redden near the horizon. Sizes track magnitude only loosely. The faint scatter behind them is synthetic, and constellation lines are drawn for Orion, the Plough and Cassiopeia only. A check worth trusting: Polaris comes out at 54.2° from Hamburg's 53.55° — the correct 0.7° pole offset.</p>
+
+  <h3>The sky panorama</h3>
+  <p class="n">Linear in azimuth and altitude across a fixed 360°, which is a plate carrée: shapes stretch badly near the zenith. It is a chart, not a photograph. Its ceiling is 90° − |latitude| + 28.6°, the highest the Moon can ever culminate from your latitude. Below the horizon the vertical scale is squeezed to 42% and the ground is translucent, so hidden bodies stay visible — neither is a real effect. The curved horizon is decoration; the real dip from eye level is about 0.05°. The Moon is drawn 20× oversized by default, and its disc is outlined even when unlit, because a real new moon simply cannot be seen.</p>
+
+  <h3>The orrery</h3>
+  <p class="n"><b>Real:</b> the ecliptic longitudes of Earth, Sun and Moon; the Sun–Earth–Moon angle; the Moon's distance; the direction of sunlight; which half of each body is lit; the tilt of Earth's axis and so the seasonal lighting of the poles; and your own place on the turning globe, driven by the Sun's hour angle.</p>
+  <p class="n"><b>Not real:</b> Earth's orbit is a circle seen at a slant — its true eccentricity of 0.0167 is not drawn and perihelion is not marked. The Moon's diameter relative to Earth's is right at 0.27; nothing else is, with Earth about 27× too large against the Moon's orbit and the Sun not to scale at all. The distance ring is stretched: the real perigee-to-apogee swing is 14%, drawn as roughly 77%, so that the ellipse is visible. The globe is seen from 35° above its equator, chosen for legibility rather than to match the panel above. Coastlines are hand-drawn and tens of kilometres out in places; land crossing the limb is pushed onto it, which distorts it. Sunlight is drawn as parallel rays, which is correct — the Sun is only half a degree wide from here.</p>
+
+  <h3>The eclipse strip</h3>
+  <p class="n">The wave is the Moon's orbit against the Earth–Sun plane, plotted from the argument of latitude the theory returns directly. An earlier version reconstructed it from the ecliptic latitude with an arcsine, which cannot separate the two halves of the orbit and was wrong by up to 30-odd degrees; that is fixed. The amplitude uses the mean inclination of 5.145°, which really oscillates by about ±0.15°. No eclipse is predicted: being near a node is necessary but not sufficient.</p>
+
+  <h3>Time and place</h3>
+  <p class="n">Time zones and daylight saving come from the browser's IANA database, so local clocks are right including past rule changes. The timeline covers a calendar year in UTC. "Use my location" reads your device's coordinates and names them from a 126-city list inside this file — nothing leaves the browser.</p>
+
+  <h3>Saving this to your Home Screen</h3>
+  <p class="n">Safari takes the name and address from the <b>page</b> it is showing. Inside claude.ai this runs in a frame, so the shortcut will always say Claude. Serve this file as its own page — GitHub Pages will do — and Add to Home Screen names it <b>Moon Lab</b> and opens it full-screen.</p>
+
+  <h3>Sources</h3>
+  <p class="n">Jean Meeus, <i>Astronomical Algorithms</i>, 2nd ed. · Kasten &amp; Young, <i>Applied Optics</i> 28 (1989) · Bennett, <i>Journal of Navigation</i> 35 (1982) · Espenak &amp; Meeus, NASA ΔT polynomials · <a href="https://science.nasa.gov/solar-system/moon/the-moon-illusion-why-does-the-moon-look-so-big-sometimes/">NASA — the moon illusion</a> · <a href="https://science.nasa.gov/moon/supermoons/">NASA — supermoons</a> · <a href="https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html">Apple — configuring web applications</a></p>
+</div>
+
+<script>
+"use strict";
+/* ── src/astro.js ────────────────────────────────────────────── */
+/* Ephemeris and observing geometry.
+   Sources are named beside each block; see README for the accuracy audit. */
+
+
+"use strict";
+
+"use strict";
+const D2R=Math.PI/180, R2D=180/Math.PI, TAU=Math.PI*2;
+const sin=a=>Math.sin(a*D2R), cos=a=>Math.cos(a*D2R), tan=a=>Math.tan(a*D2R);
+const norm=a=>((a%360)+360)%360;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+/* ─────────────── ephemeris ─────────────── */
+// Meeus 47.A : D, M, M', F, Σl(1e-6 deg), Σr(1e-3 km)
+const TL=[[0,0,1,0,6288774,-20905355],[2,0,-1,0,1274027,-3699111],[2,0,0,0,658314,-2955968],
+[0,0,2,0,213618,-569925],[0,1,0,0,-185116,48888],[0,0,0,2,-114332,-3149],[2,0,-2,0,58793,246158],
+[2,-1,-1,0,57066,-152138],[2,0,1,0,53322,-170733],[2,-1,0,0,45758,-204586],[0,1,-1,0,-40923,-129620],
+[1,0,0,0,-34720,108743],[0,1,1,0,-30383,104755],[2,0,0,-2,15327,10321],[0,0,1,2,-12528,0],
+[0,0,1,-2,10980,79661],[4,0,-1,0,10675,-34782],[0,0,3,0,10034,-23210],[4,0,-2,0,8548,-21636],
+[2,1,-1,0,-7888,24208],[2,1,0,0,-6766,30824],[1,0,-1,0,-5163,-8379],[1,1,0,0,4987,-16675],
+[2,-1,1,0,4036,-12831],[2,0,2,0,3994,-10445],[4,0,0,0,3861,-11650],[2,0,-3,0,3665,14403],
+[0,1,-2,0,-2689,-7003],[2,0,-1,2,-2602,0],[2,-1,-2,0,2390,10056],[1,0,1,0,-2348,6322],
+[2,-2,0,0,2236,-9884],[0,1,2,0,-2120,5751],[0,2,0,0,-2069,0],[2,-2,-1,0,2048,-4950],
+[2,0,1,-2,-1773,4130],[2,0,0,2,-1595,0],[4,-1,-1,0,1215,-3958],[0,0,2,2,-1110,0],[3,0,-1,0,-892,3258],
+[2,1,1,0,-810,2616],[4,-1,-2,0,759,-1897],[0,2,-1,0,-713,-2117],[2,2,-1,0,-700,2354],
+[2,1,-2,0,691,0],[2,-1,0,-2,596,0],[4,0,1,0,549,-1423],[0,0,4,0,537,-1117],[4,-1,0,0,520,-1571],
+[1,0,-2,0,-487,-1739],[2,1,0,-2,-399,0],[0,0,2,-2,-381,-4421],[1,1,1,0,351,0],[3,0,-2,0,-340,0],
+[4,0,-3,0,330,0],[2,-1,2,0,327,0],[0,2,1,0,-323,1165],[1,1,-1,0,299,0],[2,0,3,0,294,0],
+[2,0,-1,-2,0,8752]];
+// Meeus 47.B : D, M, M', F, Σb
+const TB=[[0,0,0,1,5128122],[0,0,1,1,280602],[0,0,1,-1,277693],[2,0,0,-1,173237],[2,0,-1,1,55413],
+[2,0,-1,-1,46271],[2,0,0,1,32573],[0,0,2,1,17198],[2,0,1,-1,9266],[0,0,2,-1,8822],[2,-1,0,-1,8216],
+[2,0,-2,-1,4324],[2,0,1,1,4200],[2,1,0,-1,-3359],[2,-1,-1,1,2463],[2,-1,0,1,2211],[2,-1,-1,-1,2065],
+[0,1,-1,-1,-1870],[4,0,-1,-1,1828],[0,1,0,1,-1794],[0,0,0,3,-1749],[0,1,-1,1,-1565],[1,0,0,1,-1491],
+[0,1,1,1,-1475],[0,1,1,-1,-1410],[0,1,0,-1,-1344],[1,0,0,-1,-1335],[0,0,3,1,1107],[4,0,0,-1,1021],
+[4,0,-1,1,833],[0,0,1,-3,777],[4,0,-2,1,671],[2,0,0,-3,607],[2,0,2,-1,596],[2,-1,1,-1,491],
+[2,0,-2,1,-451],[0,0,3,-1,439],[2,0,2,1,422],[2,0,-3,-1,421],[2,1,-1,1,-366],[2,1,0,1,-351],
+[4,0,0,1,331],[2,-1,1,1,315],[2,-2,0,-1,302],[0,0,1,3,-283],[2,1,1,-1,-229],[1,1,0,-1,223],
+[1,1,0,1,223],[0,1,-2,-1,-220],[2,1,-1,-1,-220],[1,0,1,1,-185],[2,-1,-2,-1,181],[0,1,2,1,-177],
+[4,0,-2,-1,176],[4,-1,-1,-1,166],[1,0,1,-1,-164],[4,0,1,-1,132],[1,0,-1,-1,-119],[4,-1,0,-1,115],
+[2,-2,0,1,107]];
+
+const jd = ms => ms/86400000 + 2440587.5;
+
+/* Universal Time runs on the turning Earth; the series below are written for Terrestrial
+   Time, which does not. delta-T is the gap between them.
+   Espenak & Meeus (2006) polynomial fits. */
+function deltaT(y){
+  let t;
+  if(y<1900){ t=(y-1820)/100; return -20+32*t*t; }
+  if(y<1920){ t=y-1900; return -2.79+1.494119*t-0.0598939*t*t+0.0061966*t*t*t-0.000197*t*t*t*t; }
+  if(y<1941){ t=y-1920; return 21.20+0.84493*t-0.076100*t*t+0.0020936*t*t*t; }
+  if(y<1961){ t=y-1950; return 29.07+0.407*t-t*t/233+t*t*t/2547; }
+  if(y<1986){ t=y-1975; return 45.45+1.067*t-t*t/260-t*t*t/718; }
+  if(y<2005){ t=y-2000; return 63.86+0.3345*t-0.060374*t*t+0.0017275*t*t*t
+                               +0.000651814*t*t*t*t+0.00002373599*t*t*t*t*t; }
+  if(y<2050){ t=y-2000; return 62.92+0.32217*t+0.005589*t*t; }
+  if(y<2150){ t=(y-1820)/100; return -20+32*t*t-0.5628*(2150-y); }
+  t=(y-1820)/100; return -20+32*t*t;
+}
+const tt = J => J + deltaT(2000+(J-2451545)/365.25)/86400;
+const obliq = T => 23.4392911 - 0.0130042*T - 1.64e-7*T*T + 5.036e-7*T*T*T;
+
+function sunPosTT(J){
+  const T=(J-2451545)/36525, n=J-2451545;
+  const L=norm(280.460+0.9856474*n), g=norm(357.528+0.9856003*n);
+  const lam=norm(L+1.915*sin(g)+0.020*sin(2*g));
+  const R=(1.00014-0.01671*cos(g)-0.00014*cos(2*g))*149597870.7;
+  const e=obliq(T);
+  const ra=norm(Math.atan2(cos(e)*sin(lam),cos(lam))*R2D);
+  const dec=Math.asin(sin(e)*sin(lam))*R2D;
+  return {lam,ra,dec,dist:R,eps:e};
+}
+function moonPosTT(J){
+  const T=(J-2451545)/36525, T2=T*T, T3=T2*T, T4=T3*T;
+  const Lp=norm(218.3164477+481267.88123421*T-0.0015786*T2+T3/538841-T4/65194000);
+  const D =norm(297.8501921+445267.1114034*T-0.0018819*T2+T3/545868-T4/113065000);
+  const M =norm(357.5291092+35999.0502909*T-0.0001536*T2+T3/24490000);
+  const Mp=norm(134.9633964+477198.8675055*T+0.0087414*T2+T3/69699-T4/14712000);
+  const F =norm(93.2720950+483202.0175233*T-0.0036539*T2-T3/3526000+T4/863310000);
+  const A1=norm(119.75+131.849*T), A2=norm(53.09+479264.290*T), A3=norm(313.45+481266.484*T);
+  const E=1-0.002516*T-0.0000074*T2;
+  let sl=0, sr=0, sb=0;
+  for(const t of TL){
+    const arg=t[0]*D+t[1]*M+t[2]*Mp+t[3]*F;
+    const e=t[1]===0?1:(Math.abs(t[1])===1?E:E*E);
+    sl+=t[4]*e*sin(arg); sr+=t[5]*e*cos(arg);
+  }
+  for(const t of TB){
+    const arg=t[0]*D+t[1]*M+t[2]*Mp+t[3]*F;
+    const e=t[1]===0?1:(Math.abs(t[1])===1?E:E*E);
+    sb+=t[4]*e*sin(arg);
+  }
+  sl+=3958*sin(A1)+1962*sin(Lp-F)+318*sin(A2);
+  sb+=-2235*sin(Lp)+382*sin(A3)+175*sin(A1-F)+175*sin(A1+F)+127*sin(Lp-Mp)-115*sin(Lp+Mp);
+  const lam=norm(Lp+sl/1e6), bet=sb/1e6, dist=385000.56+sr/1000;
+  /* F is the argument of latitude — the angle round the orbit from the ascending node.
+     Reconstructing it from beta with asin cannot separate the two branches, so return it. */
+  const eps=obliq(T);
+  const x=cos(bet)*cos(lam), y=cos(eps)*cos(bet)*sin(lam)-sin(eps)*sin(bet),
+        z=sin(eps)*cos(bet)*sin(lam)+cos(eps)*sin(bet);
+  return {lam,bet,dist,F,ra:norm(Math.atan2(y,x)*R2D),dec:Math.asin(z)*R2D};
+}
+/* Public entry points take Universal Time; the series are handed Terrestrial Time. */
+const sunPos  = J => sunPosTT(tt(J));
+const moonPos = J => moonPosTT(tt(J));
+
+function gmst(J){
+  const T=(J-2451545)/36525;
+  return norm(280.46061837+360.98564736629*(J-2451545)+0.000387933*T*T-T*T*T/38710000);
+}
+// topocentric ra/dec/dist for an object given geocentric values (Meeus 40)
+function topo(ra,dec,distKm,lat,lon,J){
+  const Re=6378.14;
+  const u=Math.atan(0.99664719*tan(lat))*R2D;
+  const rsp=0.99664719*sin(u), rcp=cos(u);
+  const lst=norm(gmst(J)+lon);
+  const H=norm(lst-ra);
+  const par=Math.asin(Re/distKm)*R2D;               // horizontal parallax
+  const dRa=Math.atan2(-rcp*sin(par)*sin(H), cos(dec)-rcp*sin(par)*cos(H))*R2D;
+  const ra2=ra+dRa;
+  const dec2=Math.atan2((sin(dec)-rsp*sin(par))*cos(dRa), cos(dec)-rcp*sin(par)*cos(H))*R2D;
+  // topocentric distance via vector difference
+  const x=distKm*cos(dec)*cos(ra)-Re*rcp*cos(lst),
+        y=distKm*cos(dec)*sin(ra)-Re*rcp*sin(lst),
+        z=distKm*sin(dec)-Re*rsp;
+  return {ra:norm(ra2),dec:dec2,dist:Math.sqrt(x*x+y*y+z*z),lst};
+}
+function altaz(ra,dec,lat,lst){
+  const H=norm(lst-ra);
+  const alt=Math.asin(sin(lat)*sin(dec)+cos(lat)*cos(dec)*cos(H))*R2D;
+  const az=norm(Math.atan2(sin(H), cos(H)*sin(lat)-tan(dec)*cos(lat))*R2D+180);
+  return {alt,az};
+}
+const refract = h => h<-1.5?0 : 1.02/tan(h+10.3/(h+5.11))/60;   // Bennett, degrees
+function airmass(h){ if(h<-2) return 40; const hh=Math.max(h,0.5);
+  return 1/(sin(hh)+0.50572*Math.pow(hh+6.07995,-1.6364)); }
+
+// full observation bundle
+function observe(J,lat,lon){
+  const s=sunPos(J), m=moonPos(J);
+  const st=topo(s.ra,s.dec,s.dist,lat,lon,J);
+  const mt=topo(m.ra,m.dec,m.dist,lat,lon,J);
+  const S=altaz(st.ra,st.dec,lat,st.lst), M=altaz(mt.ra,mt.dec,lat,mt.lst);
+  // phase from geocentric elongation
+  const psi=Math.acos(sin(s.dec)*sin(m.dec)+cos(s.dec)*cos(m.dec)*cos(s.ra-m.ra))*R2D;
+  const i=Math.atan2(s.dist*sin(psi), m.dist-s.dist*cos(psi))*R2D;
+  const k=(1+cos(i))/2;
+  const age=norm(m.lam-s.lam);                       // 0 new, 180 full
+  const diam=2*Math.atan(1737.4/mt.dist)*R2D*60;     // arcmin, topocentric
+  const altApp=M.alt+refract(M.alt);
+  const X=airmass(altApp);
+  return {J,sun:S,moon:M,altApp,k,age,psi,i,diam,dist:mt.dist,geoDist:m.dist,X,
+          beta:m.bet,lamM:m.lam,lamS:s.lam,sunDist:s.dist};
+}
+// position angle from zenith toward increasing azimuth, of B seen from A
+function paZen(A,B){
+  const dA=B.az-A.az;
+  return Math.atan2(cos(B.alt)*sin(dA), cos(A.alt)*sin(B.alt)-sin(A.alt)*cos(B.alt)*cos(dA))*R2D;
+}
+function nextPhase(J0,target){   // target: 0 new … 180 full
+  let J=J0;
+  for(let i=0;i<80;i++){
+    const s=sunPos(J), m=moonPos(J);
+    let d=norm(m.lam-s.lam-target);
+    if(d>180) d-=360;
+    if(i>0 && Math.abs(d)<1e-4) break;
+    J-=d/12.19;
+    if(J<J0) J+=29.5306;
+  }
+  return J;
+}
+/* ─────────────── colour from extinction ─────────────── */
+const KB=0.30, KV=0.20, KR=0.12;
+function moonRGB(X){
+  const x=Math.min(X,12);
+  const tr=(k)=>Math.pow(10,-0.4*k*(x-1));
+  let r=1.000*tr(KR), g=0.965*tr(KV), b=0.905*tr(KB);
+  const mx=Math.max(r,g,b);
+  return [r/mx, g/mx, b/mx];
+}
+const css=(rgb,a=1)=>`rgba(${Math.round(rgb[0]*255)},${Math.round(rgb[1]*255)},${Math.round(rgb[2]*255)},${a})`;
+
+/* ── src/data.js ────────────────────────────────────────────── */
+/* Catalogues. Star positions J2000; coastlines are hand-drawn approximations;
+   the city list exists so a located position can be named without a network call. */
+/* ─────────────── bright stars, J2000 (RA°, Dec°, mag) ─────────────── */
+const STARS=[
+ [101.29,-16.72,-1.46,"Sirius"],[95.99,-52.70,-0.74,"Canopus"],[213.92,19.18,-0.05,"Arcturus"],
+ [279.23,38.78,0.03,"Vega"],[79.17,46.00,0.08,"Capella"],[78.63,-8.20,0.13,"Rigel"],
+ [114.83,5.22,0.34,"Procyon"],[24.43,-57.24,0.46,""],[88.79,7.41,0.50,"Betelgeuse"],
+ [219.90,-60.83,-0.27,""],[210.96,-60.37,0.61,""],[297.70,8.87,0.77,"Altair"],
+ [68.98,16.51,0.85,"Aldebaran"],[201.30,-11.16,1.04,""],[247.35,-26.43,1.09,""],
+ [116.33,28.03,1.14,""],[344.41,-29.62,1.16,""],[310.36,45.28,1.25,"Deneb"],
+ [152.09,11.97,1.40,""],[113.65,31.89,1.58,""],[186.65,-63.10,0.77,""],[191.93,-59.69,1.25,""],
+ [187.79,-57.11,1.63,""],[81.28,6.35,1.64,""],[83.00,-0.30,2.23,""],[84.05,-1.20,1.69,""],
+ [85.19,-1.94,1.77,""],[86.94,-9.67,2.06,""],[81.57,28.61,1.65,""],[141.90,-8.66,1.98,""],
+ [177.26,14.57,2.14,""],[47.04,40.96,2.10,""],[51.08,49.86,1.79,""],[37.95,89.26,1.98,"Polaris"],
+ [165.93,61.75,1.79,""],[165.46,56.38,2.37,""],[178.46,53.69,2.44,""],[183.86,57.03,3.31,""],
+ [193.51,55.96,1.77,""],[200.98,54.93,2.23,""],[206.89,49.31,1.86,""],
+ [10.13,56.54,2.24,""],[2.29,59.15,2.28,""],[14.18,60.72,2.15,""],[21.45,60.24,2.68,""],
+ [28.60,63.67,3.38,""],[263.73,12.56,2.08,""],[233.67,26.71,2.23,""],[276.04,-34.38,1.85,""],
+ [271.45,-30.42,2.05,""],[326.05,9.88,2.38,""],[332.55,-46.96,1.74,""],[45.57,4.09,2.54,""]
+];
+/* constellation joins, by index above: Orion, the Plough, Cassiopeia */
+const SLINES=[[8,23],[23,24],[24,25],[25,26],[26,5],[5,27],[27,26],[8,26],
+ [34,35],[35,36],[36,37],[37,34],[37,38],[38,39],[39,40],
+ [42,41],[41,43],[43,44],[44,45]];
+
+/* ─────────────── coarse coastlines (lon°, lat°) ─────────────── */
+const LAND=[
+[[-5.5,35.9],[10,37],[20,32.5],[32,31.5],[35,23.5],[43,12.5],[51,11.8],[43,-1],[40,-15],[35,-21],
+ [32,-26],[26,-34],[18.5,-34.4],[14,-22],[12,-16],[9,-1],[9.5,4],[3,6.5],[-4,5.5],[-8,4.5],
+ [-13,8],[-17.5,14.7],[-17,21],[-13,27.7],[-9.8,30]],
+[[-9.5,43],[-9,38.7],[-6,36],[0,39],[3.3,42.3],[5,43.3],[9,44],[12,45],[13.5,45.6],[19,42],
+ [23,40],[26,40],[28,41],[30,45],[37,45],[40,43],[49,41],[52,42],[50,37],[48.5,30],[57,25],
+ [60,25],[67,25],[72,20],[73,16],[77,8.1],[80,10],[80,16],[87,21.5],[92,21],[95,16],[98,8],
+ [103,1.3],[105,10],[108,16],[110,21],[117,24],[122,30],[121,37],[126,40],[129,43],[135,48],
+ [141,53],[143,59],[152,59],[160,61],[170,66],[180,66],[172,69],[160,70],[140,73],[130,71],
+ [110,76],[95,78],[80,74],[68,73],[60,70],[55,68],[40,68],[33,70],[28,71],[21,70],[15,68],
+ [10,64],[5,59],[8,58],[10,57],[8,55],[4,52],[-2,49],[-5,48],[-2,44]],
+[[-168,65.7],[-164,68],[-156,71],[-140,70],[-128,70],[-115,69],[-100,69],[-95,72],[-85,70],
+ [-80,73],[-70,73],[-65,66],[-64,60],[-57,54],[-53,47],[-60,45],[-66,44],[-70,42],[-74,39],
+ [-76,35],[-81,31],[-80,25],[-83,29],[-88,30],[-94,29],[-97,26],[-97,21],[-92,18],[-88,21],
+ [-87,15],[-83,9],[-79,9],[-83,13],[-90,14],[-96,16],[-105,20],[-110,24],[-114,31],[-117,33],
+ [-122,37],[-124,42],[-124,48],[-131,54],[-136,58],[-145,60],[-152,58],[-158,56],[-162,59],[-165,63]],
+[[-77,8],[-72,12],[-62,11],[-52,5],[-50,0],[-44,-2],[-38,-5],[-35,-8],[-39,-13],[-41,-22],
+ [-48,-25],[-53,-33],[-58,-35],[-62,-40],[-65,-45],[-68,-52],[-70,-55],[-75,-52],[-74,-45],
+ [-73,-40],[-71,-33],[-70,-23],[-71,-18],[-77,-6],[-81,-5],[-80,-2],[-78,1]],
+[[113,-22],[114,-26],[115,-34],[118,-35],[123,-34],[129,-32],[134,-33],[138,-35],[141,-38],
+ [147,-38],[150,-37],[153,-28],[153,-25],[149,-21],[146,-19],[142,-11],[137,-12],[132,-11],
+ [129,-15],[124,-16],[122,-18],[117,-21]],
+[[-44,60],[-38,65],[-31,68],[-22,70],[-20,74],[-22,78],[-30,82],[-45,83],[-58,82],[-62,77],
+ [-55,70],[-50,66]],
+[[43,-12],[49,-13],[50,-18],[47,-25],[44,-22],[43,-16]],
+[[-5,50],[1,51],[2,53],[-1,56],[-5,58],[-6,55]],
+[[130,31],[135,34],[140,36],[142,40],[141,45],[138,37],[133,34]],
+[[166,-46],[174,-41],[178,-38],[175,-36],[172,-34],[167,-40]]
+];
+/* Antarctica: a coastline ring closed off round the pole */
+const ANTARCTICA=(()=>{
+  const outer=[[-180,-71],[-150,-75],[-120,-73],[-90,-72],[-62,-64],[-45,-61],[-20,-70],[10,-70],
+               [40,-68],[70,-67],[100,-66],[130,-66],[160,-70],[179,-71]];
+  const inner=[]; for(let l=179;l>=-180;l-=30) inner.push([l,-87]);
+  return outer.concat(inner);
+})();
+
+/* ─────────────── cities, for naming a located position offline ─────────────── */
+const CITIES=[
+["Hamburg",53.55,9.99],["Berlin",52.52,13.40],["Munich",48.14,11.58],["Cologne",50.94,6.96],
+["Frankfurt",50.11,8.68],["Stuttgart",48.78,9.18],["Bremen",53.08,8.81],["Hanover",52.37,9.74],
+["Copenhagen",55.68,12.57],["Amsterdam",52.37,4.90],["Brussels",50.85,4.35],["Paris",48.86,2.35],
+["London",51.51,-0.13],["Dublin",53.35,-6.26],["Madrid",40.42,-3.70],["Barcelona",41.39,2.17],
+["Lisbon",38.72,-9.14],["Rome",41.90,12.50],["Milan",45.46,9.19],["Zurich",47.37,8.54],
+["Vienna",48.21,16.37],["Prague",50.08,14.44],["Warsaw",52.23,21.01],["Stockholm",59.33,18.07],
+["Oslo",59.91,10.75],["Helsinki",60.17,24.94],["Reykjavík",64.15,-21.94],["Moscow",55.76,37.62],
+["Kyiv",50.45,30.52],["Istanbul",41.01,28.98],["Athens",37.98,23.73],["Bucharest",44.43,26.10],
+["Budapest",47.50,19.04],["Tallinn",59.44,24.75],["Riga",56.95,24.11],["Vilnius",54.69,25.28],
+["Minsk",53.90,27.57],["St Petersburg",59.93,30.34],["Edinburgh",55.95,-3.19],["Porto",41.15,-8.61],
+["New York",40.71,-74.01],["Los Angeles",34.05,-118.24],["Chicago",41.88,-87.63],
+["Toronto",43.65,-79.38],["Vancouver",49.28,-123.12],["Mexico City",19.43,-99.13],
+["Miami",25.76,-80.19],["Denver",39.74,-104.99],["Seattle",47.61,-122.33],["Boston",42.36,-71.06],
+["Montreal",45.50,-73.57],["Houston",29.76,-95.37],["San Francisco",37.77,-122.42],
+["Anchorage",61.22,-149.90],["Honolulu",21.31,-157.86],["Havana",23.11,-82.37],
+["Bogotá",4.71,-74.07],["Lima",-12.05,-77.04],["Santiago",-33.46,-70.65],
+["Buenos Aires",-34.60,-58.38],["São Paulo",-23.55,-46.63],["Rio de Janeiro",-22.91,-43.17],
+["Ushuaia",-54.80,-68.30],["Quito",-0.18,-78.47],["Caracas",10.48,-66.90],["La Paz",-16.50,-68.15],
+["Cairo",30.04,31.24],["Lagos",6.52,3.38],["Nairobi",-1.29,36.82],["Johannesburg",-26.20,28.05],
+["Cape Town",-33.92,18.42],["Casablanca",33.57,-7.59],["Addis Ababa",9.03,38.74],
+["Accra",5.60,-0.19],["Dakar",14.72,-17.47],["Kinshasa",-4.44,15.27],["Algiers",36.75,3.06],
+["Tunis",36.81,10.17],["Khartoum",15.50,32.56],["Antananarivo",-18.88,47.51],
+["Dubai",25.20,55.27],["Riyadh",24.71,46.68],["Tehran",35.69,51.39],["Baghdad",33.31,44.36],
+["Jerusalem",31.77,35.21],["Karachi",24.86,67.01],["Mumbai",19.08,72.88],["Delhi",28.61,77.21],
+["Bengaluru",12.97,77.59],["Kolkata",22.57,88.36],["Colombo",6.93,79.86],["Kathmandu",27.72,85.32],
+["Dhaka",23.81,90.41],["Tashkent",41.30,69.24],["Almaty",43.24,76.89],
+["Bangkok",13.76,100.50],["Singapore",1.35,103.82],["Jakarta",-6.21,106.85],["Manila",14.60,120.98],
+["Hanoi",21.03,105.85],["Kuala Lumpur",3.14,101.69],["Yangon",16.87,96.20],
+["Beijing",39.90,116.41],["Shanghai",31.23,121.47],["Hong Kong",22.32,114.17],
+["Taipei",25.03,121.57],["Seoul",37.57,126.98],["Tokyo",35.68,139.65],["Osaka",34.69,135.50],
+["Sapporo",43.06,141.35],["Ulaanbaatar",47.89,106.91],["Novosibirsk",55.03,82.92],
+["Vladivostok",43.12,131.89],["Perth",-31.95,115.86],["Sydney",-33.87,151.21],
+["Melbourne",-37.81,144.96],["Brisbane",-27.47,153.03],["Adelaide",-34.93,138.60],
+["Auckland",-36.85,174.76],["Wellington",-41.29,174.78],["Suva",-18.14,178.44],
+["Port Moresby",-9.44,147.18],["Nuuk",64.18,-51.69],["Longyearbyen",78.22,15.63]
+];
+
+
+/* a faint scatter of extra stars, generated once, uniform on the sphere */
+const BGSTARS=(()=>{
+  let seed=4242;
+  const rnd=()=>{seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff;};
+  const out=[];
+  for(let i=0;i<170;i++) out.push([rnd()*360, Math.asin(rnd()*2-1)*R2D, 0.18+rnd()*0.36, rnd()*0.7+0.3]);
+  return out;
+})();
+
+/* ── src/state.js ────────────────────────────────────────────── */
+/* Shared state, caches and calendar helpers. */
+
+
+/* ─────────────── time zones ─────────────── */
+const DTF=new Map();
+function dtf(loc,tz,o){
+  const k=loc+"|"+tz+"|"+JSON.stringify(o);
+  let f=DTF.get(k);
+  if(!f){ f=new Intl.DateTimeFormat(loc,Object.assign({timeZone:tz},o)); DTF.set(k,f); }
+  return f;
+}
+const OFFOPT={hour12:false,year:'numeric',month:'2-digit',day:'2-digit',
+              hour:'2-digit',minute:'2-digit',second:'2-digit'};
+function tzOff(ms,tz){
+  const p=dtf('en-US',tz,OFFOPT).formatToParts(new Date(ms))
+    .reduce((a,x)=>(a[x.type]=x.value,a),{});
+  return Date.UTC(+p.year,+p.month-1,+p.day,+p.hour%24,+p.minute,+p.second)-ms;
+}
+const fmt=(ms,tz,o)=>dtf('en-GB',tz,o).format(new Date(ms));
+const DAY=86400000;
+
+/* ─────────────── state ─────────────── */
+const PLACES=[
+  {n:"Hamburg",lat:53.5511,lon:9.9937,tz:"Europe/Berlin"},
+  {n:"Norderstedt",lat:53.7064,lon:9.9906,tz:"Europe/Berlin"},
+  {n:"Reykjavík",lat:64.1466,lon:-21.9426,tz:"Atlantic/Reykjavik"},
+  {n:"Nairobi",lat:-1.2864,lon:36.8172,tz:"Africa/Nairobi"},
+  {n:"Cape Town",lat:-33.9249,lon:18.4241,tz:"Africa/Johannesburg"},
+  {n:"Ushuaia",lat:-54.8019,lon:-68.3030,tz:"America/Argentina/Ushuaia"}
+];
+const S={place:0,lat:53.5511,lon:9.9937,tz:"Europe/Berlin",mag:20,speed:2,playing:false};
+const place=()=>PLACES[S.place]||PLACES[0];
+function nearestCity(lat,lon){
+  let best=null,bd=1e9;
+  for(const c of CITIES){
+    const dLat=(c[1]-lat)*111.2, dLon=(c[2]-lon)*111.2*cos((lat+c[1])/2);
+    const d=Math.hypot(dLat,dLon);
+    if(d<bd){ bd=d; best=c; }
+  }
+  return {name:best[0], km:bd};
+}
+function localToUTC(y,mo,d,h,mi,tz){
+  let g=Date.UTC(y,mo,d,h,mi);
+  for(let i=0;i<3;i++) g=Date.UTC(y,mo,d,h,mi)-tzOff(g,tz);
+  return g;
+}
+let anim=0;
+function bumpAnim(d){anim+=d;}
+let T=Date.now();
+const T0=Date.now();
+function _setT(ms){T=ms;}
+let yearStart=Date.UTC(new Date(T).getUTCFullYear(),0,1);
+let yearEnd=Date.UTC(new Date(T).getUTCFullYear()+1,0,1);
+function _setYear(a,b){yearStart=a;yearEnd=b;}
+
+/* ─────────────── fixed 360° panorama ─────────────── */
+let frame=null;
+function clearFrame(){frame=null;}
+function buildFrame(){
+  const key=S.lat.toFixed(3);
+  if(frame&&frame.key===key) return frame;
+  // the Moon can never culminate higher than 90° − |φ| + 28.6°. Closed form, so it cannot drift.
+  const altMax=clamp(Math.ceil((90-Math.abs(S.lat)+28.6)/10)*10,30,90);
+  frame={key,centre:S.lat>=0?180:0,span:360,altMax};
+  return frame;
+}
+
+/* ─────────────── the tracks: a rolling ±24 h ribbon, faded by distance in time ─────────────── */
+function moonAt(ms){
+  const o=observe(jd(ms),S.lat,S.lon);
+  return {alt:o.altApp,az:o.moon.az};
+}
+function sunAt(ms){
+  const J=jd(ms), s=sunPos(J);
+  const {alt,az}=altaz(s.ra,s.dec,S.lat,norm(gmst(J)+S.lon));
+  return {alt:alt+refract(alt),az};
+}
+const TSTEP=10*60000, THALF=24*3600000;
+const tCache={moon:new Map(),sun:new Map()};
+function clearTracks(){ tCache.moon.clear(); tCache.sun.clear(); }
+function trackPts(which,at){
+  const m=tCache[which];
+  const a=Math.floor((T-THALF)/TSTEP)*TSTEP, b=Math.ceil((T+THALF)/TSTEP)*TSTEP;
+  const out=[];
+  for(let ms=a; ms<=b; ms+=TSTEP){
+    let v=m.get(ms);
+    if(!v){ v=at(ms); m.set(ms,v); }
+    out.push({ms,alt:v.alt,az:v.az});
+  }
+  if(m.size>900) for(const k of m.keys()) if(k<a||k>b) m.delete(k);
+  return out;
+}
+
+/* ─────────────── phase helpers ─────────────── */
+function ageAt(ms){ const J=jd(ms); return norm(moonPos(J).lam-sunPos(J).lam); }
+const kFromAge=a=>(1-cos(a))/2;
+let fmTimes=null;
+function principalPhases(){                     // new and full moons of the displayed year
+  const y=new Date(T).getUTCFullYear();
+  if(fmTimes&&fmTimes.y===y) return fmTimes;
+  const full=[],neu=[];
+  let J=jd(Date.UTC(y,0,1))-32;
+  for(let i=0;i<16;i++){
+    J=nextPhase(J+1,180); const ms=(J-2440587.5)*86400000;
+    if(ms>=Date.UTC(y,0,1)&&ms<Date.UTC(y+1,0,1)) full.push(ms);
+    if(ms>Date.UTC(y+1,0,1)) break;
+  }
+  J=jd(Date.UTC(y,0,1))-32;
+  for(let i=0;i<16;i++){
+    J=nextPhase(J+1,0); const ms=(J-2440587.5)*86400000;
+    if(ms>=Date.UTC(y,0,1)&&ms<Date.UTC(y+1,0,1)) neu.push(ms);
+    if(ms>Date.UTC(y+1,0,1)) break;
+  }
+  fmTimes={y,full,neu};
+  return fmTimes;
+}
+let lensCache=null;
+function lensPhases(a,b){                       // one glyph per day inside the lens
+  const key=Math.floor(a/DAY)+"|"+Math.floor(b/DAY);
+  if(lensCache&&lensCache.key===key) return lensCache.list;
+  const list=[];
+  for(let d=Math.ceil(a/DAY)*DAY; d<=b; d+=DAY){
+    const age=ageAt(d+12*3600000);
+    list.push({ms:d+12*3600000,k:kFromAge(age),wax:age<180});
+  }
+  lensCache={key,list};
+  return list;
+}
+let fullCache=null;
+function clearFullCache(){fullCache=null;fmTimes=null;}
+function buildFullMoons(){
+  const y=new Date(T).getUTCFullYear(), key=`${y}|${S.lat.toFixed(2)}`;
+  if(fullCache&&fullCache.key===key) return fullCache;
+  const list=principalPhases().full.map(ms=>{
+    const J=jd(ms), o=observe(J,S.lat,S.lon);
+    let mx=-90;
+    for(let h=-12;h<=12;h+=0.3){ const oo=observe(J+h/24,S.lat,S.lon); if(oo.altApp>mx) mx=oo.altApp; }
+    return {ms,diam:o.diam,maxAlt:mx};
+  });
+  fullCache={key,list};
+  return fullCache;
+}
+
+
+function phaseName(age){
+  if(age<7.5||age>=352.5) return "new";
+  if(age<82.5) return "waxing crescent"; if(age<97.5) return "first quarter";
+  if(age<172.5) return "waxing gibbous"; if(age<187.5) return "full";
+  if(age<262.5) return "waning gibbous"; if(age<277.5) return "last quarter";
+  return "waning crescent";
+}
+
+/* ── src/draw.js ────────────────────────────────────────────── */
+/* Canvas helpers and the hover-target registry. */
+
+/* ─────────────── hover targets ─────────────── */
+const HOTS={sky:[],ecl:[],tl:[]};
+function hotDot(k,x,y,r,text){ HOTS[k].push({d:1,x,y,r,text}); }
+function hotSeg(k,x1,y1,x2,y2,text){ HOTS[k].push({d:0,x1,y1,x2,y2,text}); }
+function segDist(px,py,x1,y1,x2,y2){
+  const dx=x2-x1, dy=y2-y1, L=dx*dx+dy*dy;
+  const t=L?clamp(((px-x1)*dx+(py-y1)*dy)/L,0,1):0;
+  return Math.hypot(px-(x1+t*dx), py-(y1+t*dy));
+}
+function hitTest(k,px,py){
+  let best=null,bd=13;
+  for(const o of HOTS[k]){
+    const dist=o.d ? Math.hypot(px-o.x,py-o.y)-o.r : segDist(px,py,o.x1,o.y1,o.x2,o.y2);
+    if(dist<bd){ bd=dist; best=o; }
+  }
+  return best;
+}
+
+/* ─────────────── canvas plumbing ─────────────── */
+function fit(c){
+  const dpr=Math.min(window.devicePixelRatio||1,2.5);
+  const w=c.clientWidth||360, h=c.clientHeight||160;
+  if(c.width!==Math.round(w*dpr)||c.height!==Math.round(h*dpr)){
+    c.width=Math.round(w*dpr); c.height=Math.round(h*dpr);
+  }
+  const ctx=c.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+  return {ctx,w,h};
+}
+function skyColour(a){
+  const st=[[-20,[4,6,16]],[-16,[6,10,26]],[-10,[12,20,48]],[-6,[26,36,76]],[-3,[58,58,96]],
+            [0,[104,86,110]],[3,[110,124,164]],[10,[92,132,190]],[30,[64,120,196]],[60,[48,108,190]]];
+  if(a<=st[0][0]) return st[0][1];
+  if(a>=st[st.length-1][0]) return st[st.length-1][1];
+  for(let i=0;i<st.length-1;i++) if(a>=st[i][0]&&a<=st[i+1][0]){
+    const t=(a-st[i][0])/(st[i+1][0]-st[i][0]);
+    return st[i][1].map((v,k)=>v+(st[i+1][1][k]-v)*t);
+  }
+  return st[0][1];
+}
+function litPath(ctx,r,k){
+  const x=r*(2*k-1);
+  ctx.beginPath();
+  ctx.arc(0,0,r,-Math.PI/2,Math.PI/2,false);
+  ctx.ellipse(0,0,Math.abs(x),r,0,Math.PI/2,-Math.PI/2,x<0);
+  ctx.closePath();
+}
+/* the whole disc is always outlined, so a new moon is still a moon */
+function drawDisc(ctx,cx,cy,r,k,limb,north,rgb,alpha){
+  ctx.save(); ctx.translate(cx,cy); ctx.globalAlpha=alpha;
+  ctx.beginPath(); ctx.arc(0,0,r,0,TAU);
+  ctx.fillStyle=`rgba(120,140,180,${0.14*alpha})`; ctx.fill();
+  ctx.save(); ctx.rotate(limb*D2R); litPath(ctx,r,k);
+  const g=ctx.createRadialGradient(-r*0.15,-r*0.15,r*0.1,0,0,r*1.05);
+  g.addColorStop(0,css(rgb,1)); g.addColorStop(0.75,css(rgb,0.97));
+  g.addColorStop(1,css(rgb.map(v=>v*0.8),1));
+  ctx.fillStyle=g; ctx.fill(); ctx.restore();
+  if(r>7){
+    ctx.save(); ctx.rotate((north+180)*D2R);
+    ctx.globalCompositeOperation="source-atop";
+    ctx.fillStyle=`rgba(38,46,64,${0.30*alpha})`;
+    for(const m of [[-.28,-.30,.26],[-.05,-.34,.18],[.14,-.14,.20],[-.34,.06,.20],
+                    [-.12,.10,.15],[.30,.22,.13],[-.02,.40,.12]]){
+      ctx.beginPath(); ctx.ellipse(m[0]*r,m[1]*r,m[2]*r,m[2]*r*0.86,0.4,0,TAU); ctx.fill();
+    }
+    ctx.restore();
+  }
+  ctx.beginPath(); ctx.arc(0,0,r,0,TAU);
+  ctx.strokeStyle=`rgba(206,222,250,${0.50*alpha})`; ctx.lineWidth=Math.max(0.8,r*0.045); ctx.stroke();
+  ctx.restore();
+}
+
+/* ── src/sky.js ────────────────────────────────────────────── */
+/* ─────────────── panel 1 · the sky where you stand ─────────────── */
+function renderSky(){
+  const c=document.getElementById("sky");
+  const {ctx,w,h}=fit(c);
+  const F=buildFrame(); HOTS.sky.length=0;
+  const J=jd(T), o=observe(J,S.lat,S.lon), lst=norm(gmst(J)+S.lon);
+
+  const sag=Math.min(h*0.045,26), hBase=h*0.76;
+  const hY=x=>hBase-sag*(1-Math.pow(2*x/w-1,2));
+  const upScale=(hBase-h*0.07)/F.altMax, dnScale=upScale*0.42, deep=h-hBase-10;
+  const X=az=>{let d=az-F.centre; if(d>180)d-=360; if(d<-180)d+=360; return w/2+d/F.span*w;};
+  const Y=(alt,x)=>alt>=0 ? hY(x)-alt*upScale : hY(x)+Math.min(-alt*dnScale,deep);
+
+  const sc=skyColour(o.sun.alt);
+  const grd=ctx.createLinearGradient(0,0,0,hBase);
+  grd.addColorStop(0,`rgb(${sc.map(v=>Math.round(v*0.6)).join(",")})`);
+  grd.addColorStop(0.74,`rgb(${sc.map(Math.round).join(",")})`);
+  const warm=clamp(1-Math.abs(o.sun.alt)/14,0,1);
+  grd.addColorStop(1,`rgb(${Math.round(sc[0]+120*warm)},${Math.round(sc[1]+60*warm)},${Math.round(sc[2]+24*warm)})`);
+  ctx.fillStyle=grd; ctx.fillRect(0,0,w,h);
+
+  /* stars — real positions, turning with the Earth */
+  const dark=clamp((-o.sun.alt-3)/13,0,1);
+  if(dark>0.02){
+    const pos=STARS.map(s=>{
+      const p=altaz(s[0],s[1],S.lat,lst);
+      return {x:X(p.az),y:Y(p.alt,X(p.az)),alt:p.alt,mag:s[2],name:s[3]};
+    });
+    ctx.strokeStyle=`rgba(190,212,244,${0.14*dark})`; ctx.lineWidth=1;
+    for(const [i,j] of SLINES){
+      if(pos[i].alt<0||pos[j].alt<0) continue;
+      if(Math.abs(pos[i].x-pos[j].x)>w*0.4) continue;
+      ctx.beginPath(); ctx.moveTo(pos[i].x,pos[i].y); ctx.lineTo(pos[j].x,pos[j].y); ctx.stroke();
+    }
+    ctx.fillStyle="#E8EEFF";
+    for(const p of pos){
+      if(p.alt<0) continue;
+      const r=clamp(2.3-p.mag*0.42,0.55,2.6);
+      ctx.globalAlpha=clamp(1.05-p.mag*0.16,0.3,1)*dark;
+      ctx.beginPath(); ctx.arc(p.x,p.y,r,0,TAU); ctx.fill();
+      if(p.name) hotDot("sky",p.x,p.y,5,p.name+" — magnitude "+p.mag.toFixed(2)+
+        ", rising and setting because the Earth turns");
+    }
+    // a faint synthetic background, also rotating
+    for(const b of BGSTARS){
+      const p=altaz(b[0],b[1],S.lat,lst); if(p.alt<0) continue;
+      const x=X(p.az);
+      ctx.globalAlpha=b[2]*dark;
+      ctx.beginPath(); ctx.arc(x,Y(p.alt,x),b[3],0,TAU); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    ctx.font="9px ui-monospace,monospace"; ctx.textAlign="center";
+    for(const p of pos){
+      if(p.alt<8||!p.name||(p.mag>0.15&&p.name!=="Polaris")) continue;
+      ctx.fillStyle=`rgba(210,224,250,${0.5*dark})`;
+      ctx.fillText(p.name,p.x,p.y-7);
+    }
+    ctx.textAlign="left";
+  }
+
+  ctx.lineWidth=1; ctx.font="9px ui-monospace,monospace";
+  for(let a=15;a<=F.altMax;a+=15){
+    ctx.strokeStyle="rgba(255,255,255,0.085)"; ctx.beginPath();
+    for(let x=0;x<=w;x+=8){ const y=Y(a,x); x?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+    ctx.stroke();
+    ctx.fillStyle="rgba(255,255,255,0.30)"; ctx.fillText(a+"°",4,Y(a,4)-3);
+    hotSeg("sky",0,Y(a,0),w,Y(a,w),a+"° above the horizon — a fist at arm's length is about 10°");
+  }
+
+  /* the two tracks — a ribbon that fades in a day early and out a day late */
+  const track=(pts,rgb,wid,label)=>{
+    const CH=4;
+    for(const off of [-w,0,w]){
+      for(let i=0;i<pts.length-1;i+=CH){
+        const j=Math.min(i+CH,pts.length-1);
+        let jump=false,sum=0,up=0,n=0,minx=1e9,maxx=-1e9;
+        for(let q=i;q<j;q++){
+          if(Math.abs(X(pts[q+1].az)-X(pts[q].az))>w*0.5) jump=true;
+          sum+=1-Math.abs(pts[q].ms-T)/THALF; if(pts[q].alt>0) up++; n++;
+        }
+        if(jump||!n) continue;
+        const fade=clamp(sum/n,0,1); if(fade<=0.02) continue;
+        for(let q=i;q<=j;q++){ const x=X(pts[q].az)+off; minx=Math.min(minx,x); maxx=Math.max(maxx,x); }
+        if(maxx<-4||minx>w+4) continue;
+        const above=up>n/2;
+        ctx.beginPath();
+        for(let q=i;q<=j;q++){ const x=X(pts[q].az)+off;
+          q===i?ctx.moveTo(x,Y(pts[q].alt,x)):ctx.lineTo(x,Y(pts[q].alt,x)); }
+        ctx.strokeStyle=css(rgb,(above?0.58:0.20)*fade);
+        ctx.lineWidth=above?wid:wid*0.75;
+        ctx.stroke();
+        if(off===0&&above&&i%(CH*5)===0){
+          const xa=X(pts[i].az), xb=X(pts[j].az);
+          hotSeg("sky",xa,Y(pts[i].alt,xa),xb,Y(pts[j].alt,xb),label);
+        }
+      }
+    }
+  };
+  const mPts=trackPts("moon",moonAt), sPts=trackPts("sun",sunAt);
+  track(sPts,[0.94,0.70,0.34],1.5,"The Sun's track — brightest at the selected moment, fading out a day either side");
+  track(mPts,[0.75,0.83,0.96],1.7,"The Moon's track — brightest at the selected moment, fading out a day either side");
+  ctx.font="8px ui-monospace,monospace"; ctx.textAlign="center";
+  const tzoA=tzOff(T-THALF,S.tz), tzoB=tzOff(T+THALF,S.tz);
+  for(const p of mPts){
+    const d=new Date(p.ms+(p.ms<T?tzoA:tzoB));
+    if(d.getUTCMinutes()>=10||d.getUTCHours()%3!==0||p.alt<1) continue;
+    const fade=clamp(1-Math.abs(p.ms-T)/THALF,0,1); if(fade<0.12) continue;
+    const x=X(p.az),y=Y(p.alt,x);
+    ctx.fillStyle=`rgba(190,212,244,${0.7*fade})`;
+    ctx.beginPath(); ctx.arc(x,y,1.9,0,TAU); ctx.fill();
+    ctx.fillText(String(d.getUTCHours()).padStart(2,"0"),x,y-6);
+    hotDot("sky",x,y,4,fmt(p.ms,S.tz,{weekday:'short',hour:'2-digit',minute:'2-digit'})+" — the Moon is here");
+  }
+  ctx.textAlign="left";
+
+  /* sun and moon, drawn before the ground so they show through it */
+  const sx=X(o.sun.az), sy=Y(o.sun.alt,X(o.sun.az));
+  const sr=Math.max(4,(o.diam/2/60)*(w/F.span)*S.mag);
+  for(const off of [-w,0,w]){
+    const cxs=sx+off; if(cxs<-sr*6||cxs>w+sr*6) continue;
+    const sg=ctx.createRadialGradient(cxs,sy,0,cxs,sy,sr*5);
+    sg.addColorStop(0,"rgba(255,238,186,0.9)"); sg.addColorStop(0.22,"rgba(255,206,116,0.4)");
+    sg.addColorStop(1,"rgba(255,188,88,0)");
+    ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(cxs,sy,sr*5,0,TAU); ctx.fill();
+    ctx.fillStyle="rgba(255,246,212,0.95)"; ctx.beginPath(); ctx.arc(cxs,sy,sr,0,TAU); ctx.fill();
+  }
+  hotDot("sky",sx,sy,Math.max(sr,10),o.sun.alt>=0
+    ? "The Sun, "+o.sun.alt.toFixed(0)+"° up"
+    : "The Sun, "+(-o.sun.alt).toFixed(0)+"° below the horizon — shown through the Earth");
+  const mx=X(o.moon.az), my=Y(o.altApp,X(o.moon.az));
+  const rPix=Math.max(2.2,(o.diam/2/60)*(w/F.span)*S.mag);
+  const rgb=moonRGB(o.X);
+  const limb=Math.atan2(-cos(paZen(o.moon,o.sun)),sin(paZen(o.moon,o.sun)))*R2D;
+  const nth=Math.atan2(-cos(paZen(o.moon,{alt:S.lat,az:0})),sin(paZen(o.moon,{alt:S.lat,az:0})))*R2D;
+  const alpha=clamp(1-(sc[0]+sc[1]+sc[2])/3/165,0.42,1);
+  for(const off of [-w,0,w]){
+    const cxm=mx+off; if(cxm<-rPix*4||cxm>w+rPix*4) continue;
+    const hg=ctx.createRadialGradient(cxm,my,rPix*0.9,cxm,my,rPix*3.6);
+    hg.addColorStop(0,css(rgb,0.20*alpha*o.k)); hg.addColorStop(1,css(rgb,0));
+    ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(cxm,my,rPix*3.6,0,TAU); ctx.fill();
+    drawDisc(ctx,cxm,my,rPix,o.k,limb,nth,rgb,alpha);
+  }
+  hotDot("sky",mx,my,Math.max(rPix,11),"The Moon — "+phaseName(o.age)+", "+(o.k*100).toFixed(0)+
+    "% lit, "+o.diam.toFixed(1)+"′ across, "+Math.round(o.dist).toLocaleString("en-GB")+" km away"+
+    (o.altApp<0?" · below the horizon, shown through the Earth":""));
+
+  /* the ground — translucent, one edge */
+  ctx.save();
+  ctx.beginPath(); ctx.moveTo(0,h); ctx.lineTo(0,hY(0));
+  for(let x=0;x<=w;x+=6) ctx.lineTo(x,hY(x));
+  ctx.lineTo(w,h); ctx.closePath();
+  const gg=ctx.createLinearGradient(0,hBase-sag,0,h);
+  gg.addColorStop(0,"rgba(10,17,32,0.56)"); gg.addColorStop(0.5,"rgba(7,12,24,0.70)");
+  gg.addColorStop(1,"rgba(4,8,16,0.80)");
+  ctx.fillStyle=gg; ctx.fill();
+  ctx.strokeStyle="rgba(190,212,244,0.42)"; ctx.lineWidth=1.2; ctx.beginPath();
+  for(let x=0;x<=w;x+=6){ x?ctx.lineTo(x,hY(x)):ctx.moveTo(x,hY(x)); }
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.font="9px ui-monospace,monospace"; ctx.textAlign="center";
+  for(const [a,l] of [[0,"N"],[45,"NE"],[90,"E"],[135,"SE"],[180,"S"],[225,"SW"],[270,"W"],[315,"NW"]]){
+    const x=X(a); if(x<12||x>w-12) continue;
+    ctx.strokeStyle="rgba(255,255,255,0.22)";
+    ctx.beginPath(); ctx.moveTo(x,hY(x)); ctx.lineTo(x,hY(x)+7); ctx.stroke();
+    ctx.fillStyle="rgba(255,255,255,0.62)"; ctx.fillText(l,x,hY(x)+17);
+    const full={N:"north",NE:"north-east",E:"east",SE:"south-east",S:"south",
+                SW:"south-west",W:"west",NW:"north-west"}[l];
+    hotDot("sky",x,hY(x)+13,11,"Looking "+full+" (azimuth "+a+"°)");
+  }
+  for(let x=0;x<w;x+=w/6) hotSeg("sky",x,hY(x),x+w/6,hY(x+w/6),
+    "Your horizon. The curve is drawn for orientation — the real dip from eye level is about 0.05°");
+  ctx.textAlign="left";
+  const ox=w/2, oy=hY(ox);
+  ctx.strokeStyle="#E4863C"; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ox,oy-8); ctx.stroke();
+  ctx.fillStyle="#E4863C"; ctx.beginPath(); ctx.arc(ox,oy-10.5,2.1,0,TAU); ctx.fill();
+
+  hotDot("sky",ox,oy-8,12,"You, standing at "+place().n+" — the middle of the view faces "+
+    (S.lat>=0?"south":"north"));
+  return o;
+}
+
+/* ── src/orrery.js ────────────────────────────────────────────── */
+/* ─────────────── panel 2 · Sun, Earth, Moon from outside ─────────────── */
+const GE=35, gS=sin(GE), gC=cos(GE);
+function gPt(lonDeg,latDeg,R){
+  const x=cos(latDeg)*cos(lonDeg), y=cos(latDeg)*sin(lonDeg), z=sin(latDeg);
+  return {x:-R*x, y:-R*(y*gS+z*gC), d:y*gC-z*gS};      // d<0 → near side
+}
+function renderEcl(){
+  const c=document.getElementById("ecl");
+  const {ctx,w,h}=fit(c);
+  const J=jd(T), s=sunPos(J), m=moonPos(J);
+  HOTS.ecl.length=0;
+  ctx.fillStyle="#080D1A"; ctx.fillRect(0,0,w,h);
+
+  const sunX=w*0.14, sunY=h*0.52, orbR=Math.min(w*0.22,h*0.34);
+  const eLon=norm(s.lam+180);
+  const ex=sunX+orbR*cos(eLon), ey=sunY-orbR*sin(eLon)*0.40;
+  ctx.strokeStyle="rgba(255,255,255,0.09)"; ctx.setLineDash([3,4]);
+  ctx.beginPath(); ctx.ellipse(sunX,sunY,orbR,orbR*0.40,0,0,TAU); ctx.stroke(); ctx.setLineDash([]);
+  const sg=ctx.createRadialGradient(sunX,sunY,0,sunX,sunY,22);
+  sg.addColorStop(0,"rgba(255,242,196,1)"); sg.addColorStop(0.3,"rgba(255,206,110,0.5)");
+  sg.addColorStop(1,"rgba(255,180,70,0)");
+  ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(sunX,sunY,22,0,TAU); ctx.fill();
+  ctx.fillStyle="#FFE9A8"; ctx.beginPath(); ctx.arc(sunX,sunY,6.5,0,TAU); ctx.fill();
+  ctx.fillStyle="#5C93C8"; ctx.beginPath(); ctx.arc(ex,ey,3.2,0,TAU); ctx.fill();
+  hotDot("ecl",sunX,sunY,14,"The Sun. Earth's orbit is the dashed ellipse around it — one lap a year");
+  hotDot("ecl",ex,ey,8,"Earth on its orbit, "+fmt(T,S.tz,{day:'2-digit',month:'long'})+
+    ". The bubble magnifies this dot enormously");
+
+  const bx=w*0.68, by=h*0.50, bR=Math.min(w*0.28,h*0.44);
+  ctx.strokeStyle="rgba(190,212,244,0.16)"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(ex,ey); ctx.lineTo(bx-bR*0.96,by-bR*0.48); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ex,ey); ctx.lineTo(bx-bR*0.96,by+bR*0.48); ctx.stroke();
+  ctx.beginPath(); ctx.arc(bx,by,bR,0,TAU); ctx.stroke();
+
+  const ux=cos(s.lam), uy=-sin(s.lam), sunAng=Math.atan2(uy,ux);
+  ctx.save(); ctx.beginPath(); ctx.arc(bx,by,bR,0,TAU); ctx.clip();
+  ctx.strokeStyle="rgba(255,214,130,0.30)"; ctx.lineWidth=1;
+  ctx.setLineDash([3,9]);
+  ctx.lineDashOffset=(anim*0.9)%12;                    // dashes stream from the Sun toward Earth
+  for(let k=-5;k<=5;k++){
+    const px=bx-uy*k*bR/5, py=by+ux*k*bR/5;
+    ctx.beginPath(); ctx.moveTo(px+ux*bR*1.25,py+uy*bR*1.25);
+    ctx.lineTo(px-ux*bR*1.25,py-uy*bR*1.25); ctx.stroke();
+  }
+  ctx.setLineDash([]); ctx.restore();
+  hotSeg("ecl",bx+ux*bR,by+uy*bR,bx-ux*bR,by-uy*bR,
+    "Sunlight, streaming past. It arrives as parallel rays because the Sun is so far away");
+  hotDot("ecl",bx,by,bR,"A magnified view of the Earth–Moon system, far out of scale with the orbit at left");
+
+  /* ── the globe ── */
+  const eR=bR*0.32, lst=norm(gmst(J)+S.lon), HA=norm(lst-s.ra);
+  const sl=gPt(0,s.dec,1), rot=sunAng-Math.atan2(sl.y,sl.x);
+  const cR=Math.cos(rot), sR=Math.sin(rot);
+  const G=(lon,lat)=>{ const p=gPt(lon,lat,eR);
+    return {x:bx+p.x*cR-p.y*sR, y:by+p.x*sR+p.y*cR, d:p.d}; };
+  const lonOff=HA-S.lon;                       // geographic longitude → our sun-locked frame
+  const shape=(poly)=>{
+    let near=false; ctx.beginPath();
+    poly.forEach((p,i)=>{
+      const q=G(p[0]+lonOff,p[1]);
+      let x=q.x,y=q.y;
+      if(q.d>0){ const dx=x-bx,dy=y-by,L=Math.hypot(dx,dy)||1; x=bx+dx/L*eR; y=by+dy/L*eR; }
+      else near=true;
+      i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+    });
+    ctx.closePath(); return near;
+  };
+  const paint=(ocean,land)=>{
+    ctx.beginPath(); ctx.arc(bx,by,eR,0,TAU); ctx.fillStyle=ocean; ctx.fill();
+    ctx.fillStyle=land;
+    for(const poly of LAND) if(shape(poly)) ctx.fill();
+    if(shape(ANTARCTICA)) ctx.fill();
+  };
+  ctx.save(); ctx.beginPath(); ctx.arc(bx,by,eR,0,TAU); ctx.clip();
+  paint("#0E1B2C","#1E3329");                                   // night
+  ctx.save(); ctx.translate(bx,by); ctx.rotate(sunAng);
+  litPath(ctx,eR,clamp((1+sin(s.dec)*gS)/2,0,1)); ctx.restore();
+  ctx.clip();
+  paint("#3B79AE","#4F7C4C");                                   // day
+  ctx.restore();
+
+  ctx.save(); ctx.beginPath(); ctx.arc(bx,by,eR,0,TAU); ctx.clip();
+  const poly=pts=>{
+    for(let i=1;i<pts.length;i++){
+      const near=(pts[i-1].d+pts[i].d)/2<0;
+      ctx.strokeStyle=near?"rgba(226,236,255,0.24)":"rgba(226,236,255,0.07)";
+      ctx.lineWidth=0.7;
+      ctx.beginPath(); ctx.moveTo(pts[i-1].x,pts[i-1].y); ctx.lineTo(pts[i].x,pts[i].y); ctx.stroke();
+    }
+  };
+  const eq=[]; for(let a=0;a<=360;a+=6) eq.push(G(a,0)); poly(eq);
+  for(let k=0;k<6;k++){
+    const mer=[]; for(let la=-90;la<=90;la+=6) mer.push(G(norm(HA+k*60),la)); poly(mer);
+  }
+  const ring=[]; for(let a=0;a<=360;a+=6) ring.push(G(a,S.lat));
+  for(let i=1;i<ring.length;i++){
+    ctx.strokeStyle=(ring[i].d+ring[i-1].d)/2<0?"rgba(228,134,60,0.5)":"rgba(228,134,60,0.14)";
+    ctx.lineWidth=1; ctx.beginPath();
+    ctx.moveTo(ring[i-1].x,ring[i-1].y); ctx.lineTo(ring[i].x,ring[i].y); ctx.stroke();
+  }
+  ctx.restore();
+  ctx.strokeStyle="rgba(190,212,244,0.45)"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(bx,by,eR,0,TAU); ctx.stroke();
+  const pN=G(0,90), pS=G(0,-90);
+  ctx.font="9px ui-monospace,monospace"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillStyle="rgba(233,231,223,0.85)"; ctx.fillText("N",pN.x+(pN.x-bx)*0.36,pN.y+(pN.y-by)*0.36);
+  ctx.fillStyle="rgba(233,231,223,0.40)"; ctx.fillText("S",pS.x+(pS.x-bx)*0.36,pS.y+(pS.y-by)*0.36);
+  ctx.textAlign="left"; ctx.textBaseline="alphabetic";
+  hotDot("ecl",pN.x,pN.y,9,"North pole. Its tilt towards or away from the Sun is what makes the seasons");
+  hotDot("ecl",pS.x,pS.y,9,"South pole");
+  hotDot("ecl",bx,by,eR*0.55,"Earth, hugely oversized, seen from 35° above the equator. "+
+    "The lit half always faces the Sun; the meridians turn under it once a day");
+
+  /* Moon */
+  const minD=356355,maxD=406725;
+  const mr=bR*(0.52+0.40*clamp((m.dist-minD)/(maxD-minD),0,1));
+  ctx.strokeStyle="rgba(255,255,255,0.07)"; ctx.setLineDash([2,3]);
+  ctx.beginPath(); ctx.arc(bx,by,mr,0,TAU); ctx.stroke(); ctx.setLineDash([]);
+  const mAng=m.lam, mx2=bx+mr*cos(mAng), my2=by-mr*sin(mAng), mR=Math.max(3,bR*0.085);
+  ctx.beginPath(); ctx.arc(mx2,my2,mR,0,TAU); ctx.fillStyle="#2C3550"; ctx.fill();
+  ctx.save(); ctx.translate(mx2,my2); ctx.rotate(sunAng);
+  ctx.beginPath(); ctx.arc(0,0,mR,-Math.PI/2,Math.PI/2); ctx.fillStyle="#DBD9CF"; ctx.fill();
+  ctx.restore();
+  ctx.beginPath(); ctx.arc(mx2,my2,mR,0,TAU);
+  ctx.strokeStyle="rgba(206,222,250,0.5)"; ctx.lineWidth=0.9; ctx.stroke();
+  hotDot("ecl",mx2,my2,mR+7,"The Moon, "+Math.round(m.dist).toLocaleString("en-GB")+" km away. "+
+    "Always half lit — you just see that half from an angle");
+  for(let a=0;a<360;a+=45) hotDot("ecl",bx+mr*cos(a),by-mr*sin(a),6,
+    "The Moon's orbit. This ring visibly shrinks and grows: the orbit is an ellipse, "+
+    "356,400 km at its nearest to 406,700 km at its farthest");
+
+  /* you */
+  const ob=G(HA,S.lat);
+  ctx.strokeStyle="rgba(228,134,60,0.5)"; ctx.setLineDash([2,3]); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(ob.x,ob.y); ctx.lineTo(mx2,my2); ctx.stroke(); ctx.setLineDash([]);
+  hotSeg("ecl",ob.x,ob.y,mx2,my2,ob.d<0
+    ? "Your line of sight to the Moon"
+    : "Your line of sight to the Moon — it passes through the Earth, so the Moon is below your horizon");
+  // the pin: where you are standing
+  const pd=Math.hypot(ob.x-bx,ob.y-by)||1, pux=(ob.x-bx)/pd, puy=(ob.y-by)/pd;
+  const near=ob.d<0, tipx=ob.x+pux*11, tipy=ob.y+puy*11;
+  ctx.strokeStyle=near?"#E4863C":"rgba(228,134,60,0.35)"; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(ob.x,ob.y); ctx.lineTo(tipx,tipy); ctx.stroke();
+  ctx.fillStyle=near?"#E4863C":"rgba(228,134,60,0.35)";
+  ctx.beginPath(); ctx.arc(tipx,tipy,3.4,0,TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(ob.x,ob.y,1.8,0,TAU); ctx.fill();
+  ctx.font="10px ui-monospace,monospace";
+  const nm=place().n, tw=ctx.measureText(nm).width;
+  const lx=clamp(tipx+(pux>=0?7:-7-tw),4,w-tw-4), ly=clamp(tipy+(puy>=0?11:-6),12,h-4);
+  ctx.fillStyle=near?"rgba(233,231,223,0.92)":"rgba(233,231,223,0.45)";
+  ctx.fillText(nm,lx,ly);
+  hotDot("ecl",tipx,tipy,13,"From where you look at the sky: "+nm+" ("+
+    Math.abs(S.lat).toFixed(2)+"°"+(S.lat>=0?"N":"S")+", "+Math.abs(S.lon).toFixed(2)+"°"+
+    (S.lon>=0?"E":"W")+")"+(near?" — currently facing us":" — currently on the far side"));
+
+  const el=norm(m.lam-s.lam);
+  ctx.strokeStyle="rgba(190,212,244,0.28)"; ctx.setLineDash([2,2]);
+  ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(mx2,my2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(bx+bR*0.99*ux,by+bR*0.99*uy); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.strokeStyle="#BCD2F2"; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.arc(bx,by,eR*1.45,-s.lam*D2R,-mAng*D2R,el>180); ctx.stroke();
+  const half=(s.lam+ (el>180 ? el-360 : el)/2);
+  hotDot("ecl",bx+eR*1.45*cos(half),by-eR*1.45*sin(half),12,
+    "Sun–Earth–Moon angle: "+el.toFixed(0)+"°. This angle is the phase — 0° is new, 180° is full");
+  hotSeg("ecl",bx,by,mx2,my2,"Earth to Moon");
+  hotSeg("ecl",bx,by,bx+bR*0.99*ux,by+bR*0.99*uy,"Earth to Sun — the direction the lit halves face");
+  const ringLat=G(norm(HA+90),S.lat);
+  hotDot("ecl",ringLat.x,ringLat.y,7,"Your line of latitude, "+Math.abs(S.lat).toFixed(1)+"°"+
+    (S.lat>=0?"N":"S")+". You ride round this circle once a day");
+}
+
+/* ── src/timeline.js ────────────────────────────────────────────── */
+/* ─────────────── the year timeline, magnified around today ─────────────── */
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+let tlMap=null;
+function buildMap(w){
+  const a=clamp(T-14*DAY,yearStart,yearEnd), b=clamp(T+14*DAY,yearStart,yearEnd);
+  const lensW=w*0.56, out=w-lensW;
+  const dl=a-yearStart, dr=yearEnd-b, dt=dl+dr;
+  const wl=dt>0?out*dl/dt:0, wr=out-wl;
+  return {a,b,wl,lensW,wr,
+    x:ms=>ms<=a ? (dl>0?(ms-yearStart)/dl*wl:0)
+        : ms>=b ? wl+lensW+(dr>0?(ms-b)/dr*wr:0)
+        : wl+(ms-a)/(b-a)*lensW,
+    inv:px=>px<=wl ? (dl>0?yearStart+px/wl*dl:yearStart)
+         : px>=wl+lensW ? (dr>0?b+(px-wl-lensW)/wr*dr:yearEnd)
+         : a+(px-wl)/lensW*(b-a)};
+}
+function glyph(ctx,cx,cy,r,k,wax){
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,TAU);
+  ctx.fillStyle="rgba(120,140,180,0.20)"; ctx.fill();
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(wax?0:Math.PI);
+  litPath(ctx,r,k); ctx.fillStyle="#E9E7DF"; ctx.fill(); ctx.restore();
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,TAU);
+  ctx.strokeStyle="rgba(206,222,250,0.45)"; ctx.lineWidth=0.8; ctx.stroke();
+}
+function renderTimeline(){
+  const c=document.getElementById("tl");
+  const {ctx,w,h}=fit(c);
+  tlMap=buildMap(w); HOTS.tl.length=0;
+  const M=tlMap, yr=new Date(T).getUTCFullYear();
+  ctx.fillStyle="#0C1322"; ctx.fillRect(0,0,w,h);
+  const gy=11, ty=h-19, ly=h-4;
+
+  // compressed wings
+  ctx.fillStyle="rgba(255,255,255,0.03)";
+  ctx.fillRect(0,ty-6,M.wl,12); ctx.fillRect(M.wl+M.lensW,ty-6,M.wr,12);
+  ctx.font="8px ui-monospace,monospace"; ctx.textAlign="center"; ctx.fillStyle="rgba(190,212,244,0.42)";
+  for(let mo=0;mo<12;mo++){
+    const a=M.x(Date.UTC(yr,mo,1)), b=M.x(Date.UTC(yr,mo+1,1));
+    if(b-a<13) continue;
+    if(a>M.wl-2&&b<M.wl+M.lensW+2) continue;
+    ctx.strokeStyle="rgba(255,255,255,0.10)";
+    ctx.beginPath(); ctx.moveTo(a,ty-6); ctx.lineTo(a,ty+6); ctx.stroke();
+    ctx.fillText(MON[mo][0],(a+b)/2,ly);
+  }
+  // magnified fortnight
+  ctx.fillStyle="rgba(188,210,242,0.06)"; ctx.fillRect(M.wl,ty-8,M.lensW,16);
+  const perDay=M.lensW/28, every=Math.max(1,Math.ceil(30/perDay));
+  const tzo=tzOff(T,S.tz);
+  for(let d=Math.ceil((M.a+tzo)/DAY)*DAY-tzo; d<=M.b; d+=DAY){
+    const x=M.x(d), dt=new Date(d+tzo);
+    const first=dt.getUTCDate()===1;
+    ctx.strokeStyle=first?"rgba(255,255,255,0.30)":"rgba(255,255,255,0.13)";
+    ctx.beginPath(); ctx.moveTo(x,ty-8); ctx.lineTo(x,ty+(first?8:5)); ctx.stroke();
+    if(dt.getUTCDate()%every===0||first){
+      ctx.fillStyle=first?"rgba(233,231,223,0.8)":"rgba(190,212,244,0.6)";
+      ctx.fillText(first?dt.getUTCDate()+" "+MON[dt.getUTCMonth()]:String(dt.getUTCDate()),x+perDay/2,ly);
+    }
+  }
+  ctx.strokeStyle="rgba(255,255,255,0.18)";
+  ctx.beginPath(); ctx.moveTo(0,ty+8); ctx.lineTo(w,ty+8); ctx.stroke();
+
+  // phases: every day inside the lens, new and full outside
+  for(const p of lensPhases(M.a,M.b)){
+    const x=M.x(p.ms); glyph(ctx,x,gy,4.6,p.k,p.wax);
+    hotDot("tl",x,gy,6,fmt(p.ms,S.tz,{weekday:'short',day:'2-digit',month:'short'})+" — "+
+      phaseName(ageAt(p.ms))+", "+(p.k*100).toFixed(0)+"% lit");
+  }
+  hotDot("tl",M.wl+M.lensW/2,ty,M.lensW/2,"The fortnight either side of the selected moment, magnified");
+  if(M.wl>14) hotDot("tl",M.wl/2,ty,M.wl/2,"The rest of the year before, compressed");
+  if(M.wr>14) hotDot("tl",M.wl+M.lensW+M.wr/2,ty,M.wr/2,"The rest of the year after, compressed");
+  const pp=principalPhases();
+  for(const ms of pp.full){ const x=M.x(ms); if(x>M.wl-4&&x<M.wl+M.lensW+4) continue;
+    glyph(ctx,x,gy,3.2,1,true); hotDot("tl",x,gy,5,"Full moon, "+fmt(ms,S.tz,{day:'2-digit',month:'short'})); }
+  for(const ms of pp.neu){ const x=M.x(ms); if(x>M.wl-4&&x<M.wl+M.lensW+4) continue;
+    glyph(ctx,x,gy,3.2,0,true); hotDot("tl",x,gy,5,"New moon, "+fmt(ms,S.tz,{day:'2-digit',month:'short'})); }
+
+  if(T0>=yearStart&&T0<yearEnd){
+    const x=M.x(T0); ctx.fillStyle="rgba(228,134,60,0.75)";
+    ctx.beginPath(); ctx.moveTo(x,ty+9); ctx.lineTo(x-3.5,ty+15); ctx.lineTo(x+3.5,ty+15);
+    ctx.closePath(); ctx.fill();
+    hotDot("tl",x,ty+12,7,"Today — "+fmt(T0,S.tz,{weekday:'long',day:'2-digit',month:'long',year:'numeric'}));
+  }
+  const hx=clamp(M.x(T),0,w);
+  ctx.strokeStyle="#BCD2F2"; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(hx,gy+7); ctx.lineTo(hx,ty+8); ctx.stroke();
+  ctx.fillStyle="#BCD2F2"; ctx.beginPath(); ctx.arc(hx,ty,3.6,0,TAU); ctx.fill();
+  hotDot("tl",hx,ty,8,"The moment you are looking at. Drag anywhere on this strip");
+  ctx.textAlign="left";
+}
+
+/* ── src/charts.js ────────────────────────────────────────────── */
+/* ─────────────── drawer graphics ─────────────── */
+let yearBars=[];
+function renderYearChart(){
+  const c=document.getElementById("ychart"); if(!c) return;
+  const {ctx,w,h}=fit(c);
+  ctx.fillStyle="#0D1424"; ctx.fillRect(0,0,w,h);
+  const fm=buildFullMoons().list; if(!fm.length) return;
+  const L=26,Rp=26,Tp=12,B=22, pw=w-L-Rp, ph=h-Tp-B;
+  const dmin=Math.min(...fm.map(f=>f.diam))-0.4, dmax=Math.max(...fm.map(f=>f.diam))+0.4;
+  const amin=Math.min(0,Math.min(...fm.map(f=>f.maxAlt))-6), amax=Math.max(...fm.map(f=>f.maxAlt))+6;
+  ctx.font="8px ui-monospace,monospace";
+  for(let i=0;i<=3;i++){
+    const y=Tp+ph*i/3;
+    ctx.strokeStyle="rgba(255,255,255,0.09)"; ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(w-Rp,y); ctx.stroke();
+    ctx.fillStyle="#BCD2F2"; ctx.fillText((dmax-(dmax-dmin)*i/3).toFixed(1)+"′",1,y+3);
+    ctx.fillStyle="#E4863C"; ctx.textAlign="right";
+    ctx.fillText(Math.round(amax-(amax-amin)*i/3)+"°",w-2,y+3); ctx.textAlign="left";
+  }
+  const bw=pw/fm.length*0.5; yearBars=[];
+  fm.forEach((f,i)=>{
+    const x=L+pw*(i+0.5)/fm.length, y=Tp+ph*(1-(f.diam-dmin)/(dmax-dmin));
+    ctx.fillStyle="rgba(188,210,242,0.7)"; ctx.fillRect(x-bw/2,y,bw,Tp+ph-y);
+    yearBars.push({x0:x-pw/fm.length/2,x1:x+pw/fm.length/2,ms:f.ms});
+    ctx.fillStyle="#7F8CAB"; ctx.textAlign="center";
+    ctx.fillText(fmt(f.ms,S.tz,{month:'short'}),x,h-6); ctx.textAlign="left";
+  });
+  ctx.strokeStyle="#E4863C"; ctx.lineWidth=1.7; ctx.beginPath();
+  fm.forEach((f,i)=>{
+    const x=L+pw*(i+0.5)/fm.length, y=Tp+ph*(1-(f.maxAlt-amin)/(amax-amin));
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  });
+  ctx.stroke();
+}
+function renderTilt(){
+  const c=document.getElementById("tilt"); if(!c) return;
+  const {ctx,w,h}=fit(c);
+  ctx.fillStyle="#0D1424"; ctx.fillRect(0,0,w,h);
+  const m=moonPos(jd(T)), cy=h*0.55, amp=h*0.28;
+  ctx.strokeStyle="rgba(255,214,130,0.35)"; ctx.setLineDash([4,4]); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(w*0.05,cy); ctx.lineTo(w*0.95,cy); ctx.stroke(); ctx.setLineDash([]);
+  ctx.font="8px ui-monospace,monospace"; ctx.fillStyle="#7F8CAB";
+  ctx.fillText("Earth–Sun plane",w*0.05,cy-5);
+  const F0=m.F;                    // the real argument of latitude, not an asin guess
+  ctx.strokeStyle="rgba(188,210,242,0.45)"; ctx.lineWidth=1.4; ctx.beginPath();
+  for(let i=0;i<=120;i++){
+    const t=i/120, x=w*0.05+w*0.90*t, y=cy-amp*sin(F0+360*t-180);
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  }
+  ctx.stroke();
+  ctx.fillStyle="#3E7FB8"; ctx.beginPath(); ctx.arc(w*0.50,cy,6,0,TAU); ctx.fill();
+  const my=cy-amp*sin(F0);
+  ctx.fillStyle="#E9E7DF"; ctx.beginPath(); ctx.arc(w*0.68,my,4,0,TAU); ctx.fill();
+  ctx.strokeStyle="rgba(233,231,223,0.3)"; ctx.setLineDash([2,2]);
+  ctx.beginPath(); ctx.moveTo(w*0.68,cy); ctx.lineTo(w*0.68,my); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle="#BCD2F2"; ctx.font="9px ui-monospace,monospace";
+  ctx.fillText(`${m.bet>=0?"+":""}${m.bet.toFixed(1)}° off the plane`,w*0.68+8,my+3);
+}
+
+/* ── src/main.js ────────────────────────────────────────────── */
+/* State transitions, input handling and wiring. */
+
+
+
+
+
+
+
+
+/* ─────────────── draw / time ─────────────── */
+const $=id=>document.getElementById(id);
+let drawerOpen=false;
+function draw(){
+  const o=renderSky();
+  renderEcl();
+  renderTimeline();
+  $("stamp").textContent=fmt(T,S.tz,{weekday:'short',day:'2-digit',month:'short',year:'numeric',
+    hour:'2-digit',minute:'2-digit'})+" · "+phaseName(o.age);
+  if(drawerOpen){ renderYearChart(); renderTilt(); }
+}
+function setT(ms){
+  _setT(ms);
+  const y=new Date(T).getUTCFullYear();
+  if(Date.UTC(y,0,1)!==yearStart){
+    _setYear(Date.UTC(y,0,1),Date.UTC(y+1,0,1)); clearFullCache();
+  }
+  draw();
+}
+
+/* ─────────────── time lives on the horizontal axis ─────────────── */
+const stage=$("stage");
+let hinted=false;
+function usedScrub(){ if(hinted) return; hinted=true; const el=$("hint"); if(el) el.style.opacity=0; }
+stage.addEventListener("wheel",e=>{
+  e.preventDefault(); usedScrub();
+  const unit=e.deltaMode===1?16:e.deltaMode===2?400:1;
+  const d=Math.abs(e.deltaX)>=Math.abs(e.deltaY)?e.deltaX:e.deltaY;
+  setT(T+d*unit*0.7*60000);
+},{passive:false});
+let drag=null;
+stage.addEventListener("pointerdown",e=>{drag={x:e.clientX,t:T}; usedScrub(); stage.setPointerCapture(e.pointerId);});
+stage.addEventListener("pointermove",e=>{ if(drag) setT(drag.t+(drag.x-e.clientX)*2.6*60000); });
+stage.addEventListener("pointerup",()=>{drag=null;});
+stage.addEventListener("pointercancel",()=>{drag=null;});
+
+const tl=$("tl");
+function tlSet(clientX){
+  const r=tl.getBoundingClientRect();
+  if(!tlMap) return;
+  setT(clamp(tlMap.inv(clamp(clientX-r.left,0,r.width)),yearStart,yearEnd-1));
+}
+let tlDrag=false;
+tl.addEventListener("pointerdown",e=>{tlDrag=true; tl.setPointerCapture(e.pointerId); tlSet(e.clientX);});
+tl.addEventListener("pointermove",e=>{ if(tlDrag) tlSet(e.clientX); });
+tl.addEventListener("pointerup",()=>{tlDrag=false;});
+tl.addEventListener("pointercancel",()=>{tlDrag=false;});
+tl.addEventListener("keydown",e=>{
+  const step=e.shiftKey?DAY:3600000;
+  if(e.key==="ArrowRight"){e.preventDefault(); setT(T+step);}
+  if(e.key==="ArrowLeft"){e.preventDefault(); setT(T-step);}
+});
+
+$("play").onclick=()=>{
+  S.playing=!S.playing;
+  $("play").textContent=S.playing?"❚❚":"▶";
+  $("play").classList.toggle("on",S.playing);
+  if(S.playing) loop();
+};
+function loop(){ if(!S.playing) return; bumpAnim(1.4); setT(T+S.speed*60000); requestAnimationFrame(loop); }
+$("bnow").onclick=()=>setT(Date.now());
+
+function setDrawer(open){
+  drawerOpen=open;
+  $("sheet").classList.toggle("open",open);
+  $("scrim").classList.toggle("on",open);
+  $("gear").setAttribute("aria-expanded",open);
+  if(open){ renderYearChart(); renderTilt(); }
+}
+$("gear").onclick=()=>setDrawer(!drawerOpen);
+$("scrim").onclick=()=>setDrawer(false);
+$("ychart").addEventListener("click",e=>{
+  const r=e.target.getBoundingClientRect(), x=e.clientX-r.left;
+  for(const b of yearBars) if(x>=b.x0&&x<=b.x1){ setT(b.ms); break; }
+});
+PLACES.forEach((p,i)=>{const op=document.createElement("option");op.value=i;op.textContent=p.n;$("place").append(op);});
+$("place").onchange=e=>{
+  S.place=+e.target.value; const p=PLACES[S.place];
+  S.lat=p.lat; S.lon=p.lon; S.tz=p.tz;
+  clearFrame(); clearTracks(); clearFullCache(); draw();
+};
+document.querySelectorAll("[data-mag]").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("[data-mag]").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); S.mag=+b.dataset.mag; draw();
+});
+document.querySelectorAll("[data-speed]").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("[data-speed]").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); S.speed=+b.dataset.speed;
+});
+window.addEventListener("resize",()=>draw());
+
+
+/* ─────────────── tooltips ─────────────── */
+const tip=$("tip");
+let tipTimer=null;
+function showTip(text,cx,cy){
+  tip.textContent=text; tip.hidden=false;
+  const r=tip.getBoundingClientRect();
+  let x=cx+14, y=cy-r.height-12;
+  if(x+r.width>innerWidth-8) x=cx-r.width-14;
+  if(x<8) x=8;
+  if(y<8) y=cy+18;
+  tip.style.left=x+"px"; tip.style.top=y+"px";
+}
+function hideTip(){ tip.hidden=true; }
+function wire(id,key){
+  const el=$(id);
+  el.addEventListener("pointermove",e=>{
+    if(e.pointerType!=="mouse") return;
+    const r=el.getBoundingClientRect();
+    const hit=hitTest(key,e.clientX-r.left,e.clientY-r.top);
+    hit?showTip(hit.text,e.clientX,e.clientY):hideTip();
+  });
+  el.addEventListener("pointerleave",hideTip);
+  // touch: a tap that did not drag asks what is under the finger
+  let dn=null;
+  el.addEventListener("pointerdown",e=>{ if(e.pointerType!=="mouse") dn={x:e.clientX,y:e.clientY}; });
+  el.addEventListener("pointerup",e=>{
+    if(!dn) return;
+    const moved=Math.hypot(e.clientX-dn.x,e.clientY-dn.y); dn=null;
+    if(moved>6) return;
+    const r=el.getBoundingClientRect();
+    const hit=hitTest(key,e.clientX-r.left,e.clientY-r.top);
+    if(hit){ showTip(hit.text,e.clientX,e.clientY);
+      clearTimeout(tipTimer); tipTimer=setTimeout(hideTip,3600); }
+  });
+}
+wire("sky","sky"); wire("ecl","ecl"); wire("tl","tl");
+
+/* ─────────────── jump to a date ─────────────── */
+const pop=$("datepop");
+function openPop(){
+  const p=new Intl.DateTimeFormat('en-CA',{timeZone:S.tz,year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date(T))
+    .reduce((a,x)=>(a[x.type]=x.value,a),{});
+  $("dtin").value=`${p.year}-${p.month}-${p.day}T${p.hour%24===0?'00':String(p.hour).padStart(2,'0')}:${p.minute}`;
+  pop.hidden=false; $("stamp").setAttribute("aria-expanded","true");
+}
+function closePop(){ pop.hidden=true; $("stamp").setAttribute("aria-expanded","false"); }
+$("stamp").onclick=()=>pop.hidden?openPop():closePop();
+$("dtgo").onclick=()=>{
+  const v=$("dtin").value; if(!v) return closePop();
+  const [d,t]=v.split("T"), [y,mo,da]=d.split("-").map(Number), [hh,mi]=(t||"12:00").split(":").map(Number);
+  setT(localToUTC(y,mo-1,da,hh,mi,S.tz)); closePop();
+};
+document.addEventListener("pointerdown",e=>{
+  if(!pop.hidden&&!pop.contains(e.target)&&e.target!==$("stamp")) closePop();
+},true);
+
+/* ─────────────── where are you? ─────────────── */
+function applyPlace(lat,lon,tz,name){
+  const mine=PLACES.find(p=>p.mine);
+  const rec={n:name,lat,lon,tz,mine:true};
+  if(mine){ Object.assign(mine,rec); }
+  else{
+    PLACES.push(rec);
+    const op=document.createElement("option"); op.value=PLACES.length-1; op.textContent=name;
+    $("place").append(op);
+  }
+  S.place=PLACES.findIndex(p=>p.mine);
+  const opt=[...$("place").options].find(o=>+o.value===S.place); if(opt) opt.textContent=name;
+  $("place").value=S.place;
+  S.lat=lat; S.lon=lon; S.tz=tz;
+  clearFrame(); clearTracks(); clearFullCache(); draw();
+}
+$("locate").onclick=()=>{
+  const btn=$("locate"), note=$("locnote");
+  if(!navigator.geolocation){ note.textContent="This browser offers no location service."; return; }
+  btn.disabled=true; btn.textContent="locating…"; note.textContent="";
+  navigator.geolocation.getCurrentPosition(p=>{
+    const lat=p.coords.latitude, lon=p.coords.longitude;
+    const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC";
+    const c=nearestCity(lat,lon);
+    const name=c.km<60?c.name:(c.km<400?"near "+c.name:tz.split("/").pop().replace(/_/g," "));
+    applyPlace(lat,lon,tz,name);
+    note.textContent=`${Math.abs(lat).toFixed(3)}°${lat>=0?"N":"S"}, ${Math.abs(lon).toFixed(3)}°${lon>=0?"E":"W"} · ${tz} · nearest city in the built-in list is ${c.name}, ${Math.round(c.km)} km away`;
+    btn.disabled=false; btn.textContent="use my location";
+  },err=>{
+    note.textContent = err.code===1 ? "Location permission was declined."
+      : "Could not get a position. Pick a place above instead.";
+    btn.disabled=false; btn.textContent="use my location";
+  },{enableHighAccuracy:false,timeout:10000,maximumAge:600000});
+};
+
+/* ─────────────── the sunlight keeps streaming ─────────────── */
+const motionOK=!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+function idle(){
+  if(!motionOK) return;
+  if(!S.playing&&!document.hidden){ bumpAnim(1.4); renderEcl(); }
+  setTimeout(()=>requestAnimationFrame(idle),75);
+}
+
+$("place").value=0;
+setT(Date.now());
+idle();
+</script>
+</body>
+</html>

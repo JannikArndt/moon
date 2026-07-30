@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Moon Lab</title>
+<link rel="stylesheet" href="./styles.css">
+<meta name="apple-mobile-web-app-title" content="Moon Lab">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#080D1A">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23080D1A'/%3E%3Ccircle cx='104' cy='84' r='42' fill='%23E9E7DF'/%3E%3Ccircle cx='80' cy='78' r='40' fill='%23080D1A'/%3E%3Cpath d='M0 150 Q90 128 180 150 L180 180 L0 180Z' fill='%23132135'/%3E%3C/svg%3E">
+
+</head>
+<body>
+<div id="app">
+  <div id="top">
+    <h1>Moon <em>Lab</em></h1>
+    <button id="stamp" aria-haspopup="dialog" aria-expanded="false" title="Tap to jump to a date">–</button>
+    <button id="gear" aria-expanded="false" aria-controls="sheet" title="Place, speed, charts and notes">more</button>
+  </div>
+
+  <div id="datepop" hidden role="dialog" aria-label="Jump to a date">
+    <input type="datetime-local" id="dtin" aria-label="Date and time">
+    <button class="t" id="dtgo">go</button>
+  </div>
+
+  <div id="bar">
+    <button class="t" id="play" aria-label="Play" title="Run time forward">▶</button>
+    <div id="tlwrap"><canvas id="tl" tabindex="0" role="slider" aria-label="Time" title="Drag to move through the year. Arrow keys nudge an hour, shift+arrow a day"></canvas></div>
+    <button class="t" id="bnow" title="Back to now">now</button>
+  </div>
+
+  <div id="stage">
+    <div id="skywrap"><canvas id="sky"></canvas></div>
+    <div id="eclwrap"><canvas id="ecl"></canvas>
+      <span id="hint">swipe sideways to move time · tap anything to name it</span>
+    </div>
+  </div>
+</div>
+
+<div id="tip" hidden></div>
+<div id="scrim"></div>
+<div id="sheet" role="dialog" aria-label="Settings and explanations">
+  <div id="grip"></div>
+
+  <h3>From where you look at the sky</h3>
+  <div class="row"><select id="place" aria-label="Place"></select></div>
+  <div class="row" style="margin-top:.45rem">
+    <button class="t" id="locate" style="flex:1;padding:.55rem" title="Ask this device for your coordinates">use my location</button>
+  </div>
+  <p class="n" id="locnote" style="font-family:var(--mono);font-size:.62rem"></p>
+  <p class="n">The name is matched against a list of cities built into this file, so your coordinates never leave the browser. A nearest-city lookup against a real gazetteer would mean sending them to someone else's server, which this does not do.</p>
+
+  <h3>Moon size on screen</h3>
+  <div class="row"><div class="seg">
+    <button class="t" data-mag="1" title="The Moon at its real angular size — about half a degree">true</button>
+    <button class="t on" data-mag="20">×20</button>
+    <button class="t" data-mag="45">×45</button>
+  </div></div>
+
+  <h3>Playback speed</h3>
+  <div class="row"><div class="seg">
+    <button class="t" data-speed="0.5" title="About a day every 45 seconds">slow</button>
+    <button class="t on" data-speed="2" title="About a day every 12 seconds">medium</button>
+    <button class="t" data-speed="10" title="About a day every 2 seconds">fast</button>
+  </div></div>
+
+  <h3>Every full moon this year</h3>
+  <div class="chart"><canvas id="ychart"></canvas></div>
+  <div class="lg">
+    <span><i style="background:#BCD2F2"></i>apparent size</span>
+    <span><i style="background:#E4863C"></i>height in the sky</span>
+    <span>tap a bar to jump</span>
+  </div>
+  <p class="n">The <b>ember line</b> collapses in June and July: the full moon then sits opposite a high sun and crawls along the southern horizon. That low pass is what makes it look huge and turn orange. The <b>blue bars</b> — the real angular size — ignore the calendar entirely.</p>
+
+  <h3>Why most months have no eclipse</h3>
+  <div class="chart"><canvas id="tilt"></canvas></div>
+  <p class="n">The Moon's orbit is tilted 5.1°, so at new moon its shadow usually passes above or below Earth. Only near a crossing point can an eclipse happen — twice a year, not twelve times.</p>
+
+  <h3>Saving this to your Home Screen</h3>
+  <p class="n">Safari takes the name and address from the <b>page</b> it is showing, and here that page is claude.ai — this runs inside a frame on it. No tag inside the frame can change that, so the shortcut will always say Claude.</p>
+  <p class="n">To get a real icon: download this file and serve it as its own page from any static host. It already carries <code>apple-mobile-web-app-title</code>, <code>apple-mobile-web-app-capable</code> and an icon, so Add to Home Screen will then name it <b>Moon Lab</b> and open it full-screen.</p>
+
+  <h3>Where the numbers come from</h3>
+  <p class="n">Nothing is fetched or pre-tabulated. Every position is evaluated in the browser from series expansions, for the exact instant on the timeline. That is why you can scrub to any date in any year and it still answers — and why everything below is worth being precise about.</p>
+
+  <h3>Positions</h3>
+  <p class="n"><b>Moon:</b> Meeus, <i>Astronomical Algorithms</i> ch. 47 — the full 60-term longitude and distance table, the 60-term latitude table, and the A₁/A₂/A₃ additive terms. Meeus quotes about 10″ in longitude and 4″ in latitude. This implementation reproduces his worked example 47.a to every published digit.</p>
+  <p class="n"><b>Sun:</b> Meeus ch. 25, the low-precision series: roughly 0.01° in longitude, good for about 1950–2050 and degrading outside it.</p>
+  <p class="n"><b>Time:</b> the clock gives Universal Time; the series want Terrestrial Time. ΔT is added using the Espenak &amp; Meeus polynomials, which return 75 s for 2026 where the observed value is nearer 69 s — the fit predates the Earth's recent slight speed-up. Six seconds is 3″ of lunar motion, so it does not matter here; for dates far outside 1900–2150, ΔT itself becomes the largest unknown.</p>
+  <p class="n"><b>Deliberately not modelled:</b> nutation (up to 17″), solar aberration (about 20″, so the Sun's longitude is geometric rather than apparent), light-time to the Moon (about 0.7″), and the equation of the equinoxes in sidereal time (up to 17″). Together these are the same size as the truncation error. Nothing here is fit for occultation timing or grazing eclipse work.</p>
+
+  <h3>You, the observer</h3>
+  <p class="n">Parallax is applied for a surface observer on the 1976 reference ellipsoid (flattening 1/298.257), eye height taken as sea level. Refraction uses Bennett's 1982 formula, which assumes 1010 hPa and 10 °C; real horizon refraction swings by several arcminutes with the weather, so rise and set times carry a minute or two of honest uncertainty that no formula removes. Rise and set mean the apparent altitude of the body's centre equals minus its own semidiameter — upper limb on the visible horizon.</p>
+
+  <h3>Phase and size</h3>
+  <p class="n">Illuminated fraction comes from the geocentric phase angle (Meeus ch. 48); a topocentric one would differ by well under 0.1%. Apparent diameter is 2·atan(1737.4 km ÷ topocentric distance), using the Moon's mean radius. New and full moon instants are solved by Newton iteration on the difference in ecliptic longitude, and agree with NASA's published times for the November and December 2026 supermoons to within a minute. The small phase glyphs on the timeline use a cheaper formula that ignores the Sun's finite distance — up to 0.5% off, which is invisible at five pixels and is used for nothing else.</p>
+
+  <h3>Colour</h3>
+  <p class="n">Air mass follows Kasten &amp; Young (1989). Extinction uses 0.30, 0.20 and 0.12 magnitudes per air mass in blue, visual and red — typical clear low-altitude values, a convention rather than a standard, and wildly variable with haze. The Moon's colour is then normalised so its brightest channel stays full, which means <b>you are seeing the hue shift correctly and the dimming not at all</b>: the real Moon at six air masses is more than a magnitude fainter. Sky colours are a hand-tuned ramp keyed to solar altitude, not radiative transfer.</p>
+
+  <h3>The stars</h3>
+  <p class="n">About fifty bright stars at their J2000 positions, entered by hand and good to a fraction of a degree, turning with the Earth exactly as the real sky does. No precession is applied from J2000 to the displayed date (0.36° by 2026) and no proper motion; both are under a pixel here. No extinction is applied to stars, so unlike the Moon they do not redden near the horizon. Sizes track magnitude only loosely. The faint scatter behind them is synthetic, and constellation lines are drawn for Orion, the Plough and Cassiopeia only. A check worth trusting: Polaris comes out at 54.2° from Hamburg's 53.55° — the correct 0.7° pole offset.</p>
+
+  <h3>The sky panorama</h3>
+  <p class="n">Linear in azimuth and altitude across a fixed 360°, which is a plate carrée: shapes stretch badly near the zenith. It is a chart, not a photograph. Its ceiling is 90° − |latitude| + 28.6°, the highest the Moon can ever culminate from your latitude. Below the horizon the vertical scale is squeezed to 42% and the ground is translucent, so hidden bodies stay visible — neither is a real effect. The curved horizon is decoration; the real dip from eye level is about 0.05°. The Moon is drawn 20× oversized by default, and its disc is outlined even when unlit, because a real new moon simply cannot be seen.</p>
+
+  <h3>The orrery</h3>
+  <p class="n"><b>Real:</b> the ecliptic longitudes of Earth, Sun and Moon; the Sun–Earth–Moon angle; the Moon's distance; the direction of sunlight; which half of each body is lit; the tilt of Earth's axis and so the seasonal lighting of the poles; and your own place on the turning globe, driven by the Sun's hour angle.</p>
+  <p class="n"><b>Not real:</b> Earth's orbit is a circle seen at a slant — its true eccentricity of 0.0167 is not drawn and perihelion is not marked. The Moon's diameter relative to Earth's is right at 0.27; nothing else is, with Earth about 27× too large against the Moon's orbit and the Sun not to scale at all. The distance ring is stretched: the real perigee-to-apogee swing is 14%, drawn as roughly 77%, so that the ellipse is visible. The globe is seen from 35° above its equator, chosen for legibility rather than to match the panel above. Coastlines are hand-drawn and tens of kilometres out in places; land crossing the limb is pushed onto it, which distorts it. Sunlight is drawn as parallel rays, which is correct — the Sun is only half a degree wide from here.</p>
+
+  <h3>The eclipse strip</h3>
+  <p class="n">The wave is the Moon's orbit against the Earth–Sun plane, plotted from the argument of latitude the theory returns directly. An earlier version reconstructed it from the ecliptic latitude with an arcsine, which cannot separate the two halves of the orbit and was wrong by up to 30-odd degrees; that is fixed. The amplitude uses the mean inclination of 5.145°, which really oscillates by about ±0.15°. No eclipse is predicted: being near a node is necessary but not sufficient.</p>
+
+  <h3>Time and place</h3>
+  <p class="n">Time zones and daylight saving come from the browser's IANA database, so local clocks are right including past rule changes. The timeline covers a calendar year in UTC. "Use my location" reads your device's coordinates and names them from a 126-city list inside this file — nothing leaves the browser.</p>
+
+  <h3>Saving this to your Home Screen</h3>
+  <p class="n">Safari takes the name and address from the <b>page</b> it is showing. Inside claude.ai this runs in a frame, so the shortcut will always say Claude. Serve this file as its own page — GitHub Pages will do — and Add to Home Screen names it <b>Moon Lab</b> and opens it full-screen.</p>
+
+  <h3>Sources</h3>
+  <p class="n">Jean Meeus, <i>Astronomical Algorithms</i>, 2nd ed. · Kasten &amp; Young, <i>Applied Optics</i> 28 (1989) · Bennett, <i>Journal of Navigation</i> 35 (1982) · Espenak &amp; Meeus, NASA ΔT polynomials · <a href="https://science.nasa.gov/solar-system/moon/the-moon-illusion-why-does-the-moon-look-so-big-sometimes/">NASA — the moon illusion</a> · <a href="https://science.nasa.gov/moon/supermoons/">NASA — supermoons</a> · <a href="https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html">Apple — configuring web applications</a></p>
+</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
