@@ -7,7 +7,11 @@ import {HOTS,hotDot,hotSeg,fit,litPath} from "./draw.js";
 const GE=35, gS=sin(GE), gC=cos(GE);
 function gPt(lonDeg,latDeg,R){
   const x=cos(latDeg)*cos(lonDeg), y=cos(latDeg)*sin(lonDeg), z=sin(latDeg);
-  return {x:-R*x, y:-R*(y*gS+z*gC), d:y*gC-z*gS};      // d<0 → near side
+  // Screen x is +R*x, not −R*x: viewed from outside the sphere, east must run to
+  // the right. The old sign mirrored the globe east–west (Africa's horn pointed
+  // the wrong way). d and screen y are unchanged, so the near side and the
+  // sun-locked rotation below are unaffected.
+  return {x:R*x, y:-R*(y*gS+z*gC), d:y*gC-z*gS};        // d<0 → near side
 }
 export function renderEcl(){
   const c=document.getElementById("ecl");
