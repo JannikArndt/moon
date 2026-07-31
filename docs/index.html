@@ -118,7 +118,7 @@ p.n code{font-family:var(--mono);font-size:.9em;color:var(--lune)}
   <div id="stage">
     <div id="skywrap"><canvas id="sky"></canvas></div>
     <div id="eclwrap"><canvas id="ecl"></canvas>
-      <span id="hint">swipe sideways to move time · tap anything to name it</span>
+      <span id="hint">swipe sideways to move time</span>
     </div>
   </div>
 </div>
@@ -134,7 +134,7 @@ p.n code{font-family:var(--mono);font-size:.9em;color:var(--lune)}
     <button class="t" id="locate" style="flex:1;padding:.55rem" title="Ask this device for your coordinates">use my location</button>
   </div>
   <p class="n" id="locnote" style="font-family:var(--mono);font-size:.62rem"></p>
-  <p class="n">The name is matched against a list of cities built into this file, so your coordinates never leave the browser. A nearest-city lookup against a real gazetteer would mean sending them to someone else's server, which this does not do.</p>
+  <p class="n">The name is matched against a list of cities built into this file, so your coordinates never leave the browser.</p>
 
   <h3>Moon size on screen</h3>
   <div class="row"><div class="seg">
@@ -162,10 +162,6 @@ p.n code{font-family:var(--mono);font-size:.9em;color:var(--lune)}
   <h3>Why most months have no eclipse</h3>
   <div class="chart"><canvas id="tilt"></canvas></div>
   <p class="n">The Moon's orbit is tilted 5.1°, so at new moon its shadow usually passes above or below Earth. Only near a crossing point can an eclipse happen — twice a year, not twelve times.</p>
-
-  <h3>Saving this to your Home Screen</h3>
-  <p class="n">Safari takes the name and address from the <b>page</b> it is showing, and here that page is claude.ai — this runs inside a frame on it. No tag inside the frame can change that, so the shortcut will always say Claude.</p>
-  <p class="n">To get a real icon: download this file and serve it as its own page from any static host. It already carries <code>apple-mobile-web-app-title</code>, <code>apple-mobile-web-app-capable</code> and an icon, so Add to Home Screen will then name it <b>Moon Lab</b> and open it full-screen.</p>
 
   <h3>Where the numbers come from</h3>
   <p class="n">Nothing is fetched or pre-tabulated. Every position is evaluated in the browser from series expansions, for the exact instant on the timeline. That is why you can scrub to any date in any year and it still answers — and why everything below is worth being precise about.</p>
@@ -200,9 +196,6 @@ p.n code{font-family:var(--mono);font-size:.9em;color:var(--lune)}
 
   <h3>Time and place</h3>
   <p class="n">Time zones and daylight saving come from the browser's IANA database, so local clocks are right including past rule changes. The timeline covers a calendar year in UTC. "Use my location" reads your device's coordinates and names them from a 126-city list inside this file — nothing leaves the browser.</p>
-
-  <h3>Saving this to your Home Screen</h3>
-  <p class="n">Safari takes the name and address from the <b>page</b> it is showing. Inside claude.ai this runs in a frame, so the shortcut will always say Claude. Serve this file as its own page — GitHub Pages will do — and Add to Home Screen names it <b>Moon Lab</b> and opens it full-screen.</p>
 
   <h3>Sources</h3>
   <p class="n">Jean Meeus, <i>Astronomical Algorithms</i>, 2nd ed. · Kasten &amp; Young, <i>Applied Optics</i> 28 (1989) · Bennett, <i>Journal of Navigation</i> 35 (1982) · Espenak &amp; Meeus, NASA ΔT polynomials · <a href="https://science.nasa.gov/solar-system/moon/the-moon-illusion-why-does-the-moon-look-so-big-sometimes/">NASA — the moon illusion</a> · <a href="https://science.nasa.gov/moon/supermoons/">NASA — supermoons</a> · <a href="https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html">Apple — configuring web applications</a></p>
