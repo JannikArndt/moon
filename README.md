@@ -4,7 +4,7 @@ An in-browser instrument for seeing what the Moon actually does: where it sits i
 what colour it turns near the horizon, how big it really is tonight, and why any of that
 happens. Two panels, one timeline, no server.
 
-**Live:** `https://jannikarndt.github.io/moon/` · **Offline:** open `docs/index.html`
+**Live:** `https://jannikarndt.github.io/moon/` · **Offline:** `npm run build`, then open `dist/index.html`
 
 ---
 
@@ -63,19 +63,20 @@ npm run dev           # Vite dev server with live reload
 The files are plain ES modules, so any static server works too (e.g.
 `python3 -m http.server 8000`) — no install needed just to look.
 
-**GitHub Pages:** push to `main`, then Settings → Pages → deploy from `main`, folder `/`.
-`.nojekyll` is included so the `src/` directory is served as-is. Nothing to build for the
-hosted version.
+**GitHub Pages:** published by CI. `.github/workflows/deploy.yml` runs `npm run build` on
+every push to `main` and deploys the bundle — Settings → Pages → Source is **GitHub Actions**.
+Nothing to build or commit by hand; just push.
 
 **Single file:**
 
 ```bash
-npm run build         # -> docs/index.html, one self-contained file, ~67 kB, no runtime deps
+npm run build         # -> dist/index.html, one self-contained file, ~67 kB, no runtime deps
 ```
 
 Vite bundles from `index.html`, following the imports into a real syntax tree (each module
 keeps its own scope), and `vite-plugin-singlefile` inlines the JS and CSS into that one HTML
 file. Config lives in `vite.config.js`. A new module needs no registration — just import it.
+`dist/` is gitignored; the same build runs in CI to produce the hosted site.
 
 ---
 
@@ -84,8 +85,9 @@ file. Config lives in `vite.config.js`. A new module needs no registration — j
 ```
 index.html        shell, controls, and the accuracy audit in the drawer
 styles.css
-vite.config.js    Vite + singlefile config; `npm run build` -> docs/index.html
+vite.config.js    Vite + singlefile config; `npm run build` -> dist/index.html
 package.json      dev-only build tooling (Vite)
+.github/workflows/deploy.yml   builds and publishes to GitHub Pages on push to main
 src/
   astro.js        ephemeris and observing geometry — the only file with real physics
   data.js         star catalogue, coastlines, city list
@@ -96,7 +98,7 @@ src/
   timeline.js     the magnified year
   charts.js       the two drawer diagrams
   main.js         input handling and wiring
-docs/index.html
+dist/index.html   build output (gitignored; produced locally or by CI)
 ```
 
 ---

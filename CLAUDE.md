@@ -2,7 +2,9 @@
 
 Browser instrument showing the Moon's real position, size, colour and geometry.
 No runtime dependencies and no network calls at runtime; the build uses Vite
-(dev-only). Hosting just serves the pre-built `docs/index.html`, no build needed.
+(dev-only). GitHub Pages is published by CI: `.github/workflows/deploy.yml` runs
+`npm run build` on every push to `main` and deploys the bundle. No build artifact
+is committed — `dist/` is gitignored.
 Product context and the bug log are in `README.md`; do not duplicate them here.
 
 ## Commands
@@ -10,8 +12,8 @@ Product context and the bug log are in `README.md`; do not duplicate them here.
 ```bash
 npm install                   # once, pulls the dev-only build tools
 npm run dev                   # Vite dev server with live reload (serves src/ as ES modules)
-npm run build                 # -> docs/index.html (single self-contained file, ~67 kB)
-npm run preview               # serve the built docs/index.html to check the bundle
+npm run build                 # -> dist/index.html (single self-contained file, ~67 kB)
+npm run preview               # serve the built dist/index.html to check the bundle
 ```
 
 `src/astro.js` is DOM-free and dependency-free, so it can be imported directly in Node.
@@ -100,8 +102,9 @@ There is no test harness checked in. Verifying render code without a browser nee
 
 `vite build` (via `npm run build`) bundles from the `index.html` entry, following the module
 imports into a real syntax tree — each module keeps its own scope. `vite-plugin-singlefile`
-then inlines the bundled JS and CSS into one self-contained `docs/index.html`. Config is
-`vite.config.js`.
+then inlines the bundled JS and CSS into one self-contained `dist/index.html`. Config is
+`vite.config.js`. CI (`.github/workflows/deploy.yml`) runs this and publishes `dist/` to
+GitHub Pages; the artifact is never committed.
 
 A new module needs no registration — just `import` it from wherever it is used; Vite finds it.
 Top-level names no longer have to be globally unique (proper scoping), and there is no textual

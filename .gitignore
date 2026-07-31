@@ -1,2 +1,5 @@
 node_modules/
 .DS_Store
+
+# build output (produced by CI, never committed)
+dist/
