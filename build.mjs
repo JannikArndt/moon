@@ -27,5 +27,5 @@ const html = readFileSync(join(root, "index.html"), "utf8")
            `<script>\n"use strict";\n${js}\n</script>`);
 
 mkdirSync(join(root, "docs"), {recursive: true});
-writeFileSync(join(root, "docs", "moon-lab.html"), html);
-console.log(`docs/moon-lab.html  ${(html.length / 1024).toFixed(0)} kB`);
+writeFileSync(join(root, "docs", "index.html"), html);
+console.log(`docs/index.html  ${(html.length / 1024).toFixed(0)} kB`);
