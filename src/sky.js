@@ -72,32 +72,33 @@ export function renderSky(){
     hotSeg("sky",0,Y(a,0),w,Y(a,w),a+"° above the horizon — a fist at arm's length is about 10°");
   }
 
-  /* the two tracks — a ribbon that fades in a day early and out a day late */
+  /* the two tracks — a ribbon that fades in a day early and out a day late.
+     Drawn one 10-minute segment at a time and split exactly where it crosses the
+     horizon, so the bright (above-horizon) part always ends on the horizon rather
+     than on a chunk boundary. Classifying whole chunks made those ends jump by a
+     chunk as the rolling grid shifted, which read as the path ends flickering. */
   const track=(pts,rgb,wid,label)=>{
-    const CH=4;
+    const seg=(x1,y1,x2,y2,above,fade)=>{
+      ctx.strokeStyle=css(rgb,(above?0.58:0.20)*fade);
+      ctx.lineWidth=above?wid:wid*0.75;
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    };
     for(const off of [-w,0,w]){
-      for(let i=0;i<pts.length-1;i+=CH){
-        const j=Math.min(i+CH,pts.length-1);
-        let jump=false,sum=0,up=0,n=0,minx=1e9,maxx=-1e9;
-        for(let q=i;q<j;q++){
-          if(Math.abs(X(pts[q+1].az)-X(pts[q].az))>w*0.5) jump=true;
-          sum+=1-Math.abs(pts[q].ms-T)/THALF; if(pts[q].alt>0) up++; n++;
+      for(let q=0;q<pts.length-1;q++){
+        const A=pts[q], B=pts[q+1];
+        const xa=X(A.az)+off, xb=X(B.az)+off;
+        if(Math.abs(xb-xa)>w*0.5) continue;                    // don't stroke across the seam
+        if((xa<-4&&xb<-4)||(xa>w+4&&xb>w+4)) continue;         // wholly off-screen
+        const fade=clamp(1-Math.abs((A.ms+B.ms)/2-T)/THALF,0,1); if(fade<=0.02) continue;
+        const ya=Y(A.alt,xa), yb=Y(B.alt,xb);
+        if((A.alt>=0)===(B.alt>=0)){
+          seg(xa,ya,xb,yb,A.alt>=0,fade);
+        }else{                                                 // straddles the horizon
+          const t=A.alt/(A.alt-B.alt), xm=xa+(xb-xa)*t, ym=hY(xm);
+          seg(xa,ya,xm,ym,A.alt>=0,fade);
+          seg(xm,ym,xb,yb,B.alt>=0,fade);
         }
-        if(jump||!n) continue;
-        const fade=clamp(sum/n,0,1); if(fade<=0.02) continue;
-        for(let q=i;q<=j;q++){ const x=X(pts[q].az)+off; minx=Math.min(minx,x); maxx=Math.max(maxx,x); }
-        if(maxx<-4||minx>w+4) continue;
-        const above=up>n/2;
-        ctx.beginPath();
-        for(let q=i;q<=j;q++){ const x=X(pts[q].az)+off;
-          q===i?ctx.moveTo(x,Y(pts[q].alt,x)):ctx.lineTo(x,Y(pts[q].alt,x)); }
-        ctx.strokeStyle=css(rgb,(above?0.58:0.20)*fade);
-        ctx.lineWidth=above?wid:wid*0.75;
-        ctx.stroke();
-        if(off===0&&above&&i%(CH*5)===0){
-          const xa=X(pts[i].az), xb=X(pts[j].az);
-          hotSeg("sky",xa,Y(pts[i].alt,xa),xb,Y(pts[j].alt,xb),label);
-        }
+        if(off===0&&A.alt>0&&q%20===0) hotSeg("sky",xa,ya,xb,yb,label);
       }
     }
   };

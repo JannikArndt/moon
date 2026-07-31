@@ -72,6 +72,8 @@ p.n code{font-family:var(--mono);font-size:.9em;color:var(--lune)}
 #stamp:focus-visible{outline:2px solid var(--ember);outline-offset:2px}
 #datepop{position:absolute;right:.8rem;top:2.2rem;z-index:25;display:flex;gap:.35rem;
   background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:.4rem}
+/* an id selector beats the UA [hidden] rule, so restore it or the popup never hides */
+#datepop[hidden]{display:none}
 #datepop input{font-family:var(--mono);font-size:.72rem;background:var(--ink);color:var(--bone);
   border:1px solid var(--line);border-radius:2px;padding:.35rem}
 #tip{position:fixed;z-index:60;max-width:min(20rem,70vw);background:#0B1220;color:var(--bone);

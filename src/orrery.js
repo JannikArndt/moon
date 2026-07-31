@@ -41,7 +41,7 @@ export function renderEcl(){
   ctx.save(); ctx.beginPath(); ctx.arc(bx,by,bR,0,TAU); ctx.clip();
   ctx.strokeStyle="rgba(255,214,130,0.30)"; ctx.lineWidth=1;
   ctx.setLineDash([3,9]);
-  ctx.lineDashOffset=(anim*0.9)%12;                    // dashes stream from the Sun toward Earth
+  ctx.lineDashOffset=(-anim*0.9)%12;                   // dashes stream from the Sun toward Earth
   for(let k=-5;k<=5;k++){
     const px=bx-uy*k*bR/5, py=by+ux*k*bR/5;
     ctx.beginPath(); ctx.moveTo(px+ux*bR*1.25,py+uy*bR*1.25);
