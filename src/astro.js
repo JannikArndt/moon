@@ -102,7 +102,7 @@ export function moonPosTT(J){
   return {lam,bet,dist,F,ra:norm(Math.atan2(y,x)*R2D),dec:Math.asin(z)*R2D};
 }
 /* Public entry points take Universal Time; the series are handed Terrestrial Time. */
-const sunPos  = J => sunPosTT(tt(J));
+export const sunPos = J => sunPosTT(tt(J));
 export const moonPos = J => moonPosTT(tt(J));
 
 export function gmst(J){

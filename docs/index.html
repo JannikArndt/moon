@@ -308,7 +308,7 @@ function moonPosTT(J){
   return {lam,bet,dist,F,ra:norm(Math.atan2(y,x)*R2D),dec:Math.asin(z)*R2D};
 }
 /* Public entry points take Universal Time; the series are handed Terrestrial Time. */
-const sunPos  = J => sunPosTT(tt(J));
+const sunPos = J => sunPosTT(tt(J));
 const moonPos = J => moonPosTT(tt(J));
 
 function gmst(J){
@@ -390,6 +390,8 @@ const css=(rgb,a=1)=>`rgba(${Math.round(rgb[0]*255)},${Math.round(rgb[1]*255)},$
 /* ── src/data.js ────────────────────────────────────────────── */
 /* Catalogues. Star positions J2000; coastlines are Natural Earth 1:110m, simplified;
    the city list exists so a located position can be named without a network call. */
+/* dust generation below uses R2D at load time */
+
 /* ─────────────── bright stars, J2000 (RA°, Dec°, mag) ─────────────── */
 const STARS=[
  [101.29,-16.72,-1.46,"Sirius"],[95.99,-52.70,-0.74,"Canopus"],[213.92,19.18,-0.05,"Arcturus"],

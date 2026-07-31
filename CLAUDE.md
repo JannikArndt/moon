@@ -100,6 +100,10 @@ every module uses static top-level imports and top-level names are globally uniq
 add a module, add it to `ORDER`. If you add a name, check it does not already exist elsewhere
 — a collision will not error, it will shadow.
 
+The strip regex matches an `import`/`export` line only when the statement is the *whole*
+line. A **trailing comment on an import** (`import {x} from "./y.js"; // note`) is not stripped
+and leaks into the bundle, which breaks it silently. Put such comments on their own line.
+
 ## Conventions
 
 - Vanilla ES modules and Canvas 2D. No framework, no bundler beyond `build.mjs`, no packages.

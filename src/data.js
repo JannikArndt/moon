@@ -1,5 +1,7 @@
 /* Catalogues. Star positions J2000; coastlines are Natural Earth 1:110m, simplified;
    the city list exists so a located position can be named without a network call. */
+/* dust generation below uses R2D at load time */
+import {R2D} from "./astro.js";
 /* ─────────────── bright stars, J2000 (RA°, Dec°, mag) ─────────────── */
 export const STARS=[
  [101.29,-16.72,-1.46,"Sirius"],[95.99,-52.70,-0.74,"Canopus"],[213.92,19.18,-0.05,"Arcturus"],
