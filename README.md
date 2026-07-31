@@ -4,24 +4,7 @@ An in-browser instrument for seeing what the Moon actually does: where it sits i
 what colour it turns near the horizon, how big it really is tonight, and why any of that
 happens. Two panels, one timeline, no server.
 
-**Live:** `https://<user>.github.io/moon-lab/` · **Offline:** open `dist/moon-lab.html`
-
----
-
-## The question it started from
-
-> *"I just learned that the moon looks larger in July."*
-
-It doesn't — not in the sense of angular size. What is special about July in the northern
-hemisphere is that the full moon sits opposite a high summer sun, so it crawls along the
-southern horizon. A low moon triggers the moon illusion and reddens through a long slant of
-atmosphere. Its actual width follows the perigee cycle, which ignores the calendar entirely:
-in 2026 the July full moon is **29.6′** across, one of the smallest of the year, while
-December's is **34.0′**.
-
-The "every full moon this year" chart in the **more** drawer shows both curves at once. The
-ember line — height in the sky — collapses in June and July. The blue bars — real angular
-size — do not care.
+**Live:** `https://jannikarndt.github.io/moon/` · **Offline:** open `docs/index.html`
 
 ---
 
@@ -90,10 +73,6 @@ node build.mjs        # -> dist/moon-lab.html, ~76 kB, no dependencies
 keywords. That works only because the modules use static top-level imports and unique names;
 if you add a module, add it to `ORDER`.
 
-Serving it standalone also makes *Add to Home Screen* work properly — the file already carries
-`apple-mobile-web-app-title`, `apple-mobile-web-app-capable` and an inline SVG icon. Inside an
-iframe those tags are ignored, which is why the shortcut is named after the host page there.
-
 ---
 
 ## Layout
@@ -112,7 +91,7 @@ src/
   timeline.js     the magnified year
   charts.js       the two drawer diagrams
   main.js         input handling and wiring
-dist/moon-lab.html
+docs/index.html
 ```
 
 ---
@@ -128,18 +107,11 @@ Kept because each one was invisible until it was measured.
    at 53°N stays up longer than that, so the tail fell outside and appeared later. Replaced by
    an outward search for the true rise and set: 21 truncated frames out of 151 became 0 of 154.
    Later replaced again by the fading ±24 h ribbon.
-3. **The stars did not move.** They were a fixed screen pattern. Now real coordinates
-   converted to alt-azimuth each frame — Polaris lands at 54.2° for latitude 53.55°.
-4. **The eclipse diagram used the wrong branch.** It rebuilt the argument of latitude from the
-   ecliptic latitude with `asin`, which cannot distinguish the two halves of the orbit and was
-   wrong by up to 33°. The theory already computes `F`; it now returns it.
-5. **Universal Time was fed to formulas expecting Terrestrial Time.** Worth 34″ of lunar
+3. **Universal Time was fed to formulas expecting Terrestrial Time.** Worth 34″ of lunar
    longitude and about a minute in phase instants. ΔT is now applied.
-6. **43 ms per frame.** `Intl.DateTimeFormat` was being constructed fresh for every one of
+4. **43 ms per frame.** `Intl.DateTimeFormat` was being constructed fresh for every one of
    ~290 track samples per frame. Memoising the formatters took it to 1.5 ms — a 29× difference
    and the single largest performance mistake in the file.
-7. **A fix silently reverted.** A precomputed star field was overwritten by a later rebuild
-   from stale sources and went unnoticed for two revisions. Found only by re-auditing.
 
 ---
 
