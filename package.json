@@ -1,0 +1,17 @@
+{
+  "name": "moon-lab",
+  "version": "1.0.0",
+  "description": "Browser instrument showing the Moon's real position, size, colour and geometry.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^8.0.0",
+    "vite-plugin-singlefile": "^2.0.0"
+  }
+}

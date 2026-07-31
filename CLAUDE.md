@@ -1,14 +1,17 @@
 # CLAUDE.md
 
 Browser instrument showing the Moon's real position, size, colour and geometry.
-No dependencies, no build step for hosting, no network calls at runtime.
+No runtime dependencies and no network calls at runtime; the build uses Vite
+(dev-only). Hosting just serves the pre-built `docs/index.html`, no build needed.
 Product context and the bug log are in `README.md`; do not duplicate them here.
 
 ## Commands
 
 ```bash
-python3 -m http.server 8000   # ES modules need a server, not file://
-node build.mjs                # -> dist/moon-lab.html (single file, ~80 kB)
+npm install                   # once, pulls the dev-only build tools
+npm run dev                   # Vite dev server with live reload (serves src/ as ES modules)
+npm run build                 # -> docs/index.html (single self-contained file, ~67 kB)
+npm run preview               # serve the built docs/index.html to check the bundle
 ```
 
 `src/astro.js` is DOM-free and dependency-free, so it can be imported directly in Node.
@@ -20,7 +23,7 @@ node --input-type=module -e "import('./src/astro.js').then(a=>{ /* ... */ })"
 
 ## Module graph
 
-Dependency order, which is also `ORDER` in `build.mjs`:
+Dependency order (Vite derives this from the imports; you no longer maintain it by hand):
 
 ```
 astro → data → state → draw → sky, orrery, timeline, charts → main
@@ -93,20 +96,22 @@ Any change to `astro.js` must keep these:
 There is no test harness checked in. Verifying render code without a browser needs a stubbed
 `document`/canvas; if you build one, put it in `test/` and wire it to these values.
 
-## Build constraint
+## Build
 
-`build.mjs` strips `import`/`export` textually and concatenates. That is only safe because
-every module uses static top-level imports and top-level names are globally unique. If you
-add a module, add it to `ORDER`. If you add a name, check it does not already exist elsewhere
-— a collision will not error, it will shadow.
+`vite build` (via `npm run build`) bundles from the `index.html` entry, following the module
+imports into a real syntax tree — each module keeps its own scope. `vite-plugin-singlefile`
+then inlines the bundled JS and CSS into one self-contained `docs/index.html`. Config is
+`vite.config.js`.
 
-The strip regex matches an `import`/`export` line only when the statement is the *whole*
-line. A **trailing comment on an import** (`import {x} from "./y.js"; // note`) is not stripped
-and leaks into the bundle, which breaks it silently. Put such comments on their own line.
+A new module needs no registration — just `import` it from wherever it is used; Vite finds it.
+Top-level names no longer have to be globally unique (proper scoping), and there is no textual
+import/export stripping to trip over. Keep imports static and top-level so the graph stays
+statically analysable.
 
 ## Conventions
 
-- Vanilla ES modules and Canvas 2D. No framework, no bundler beyond `build.mjs`, no packages.
+- Vanilla ES modules and Canvas 2D. No framework and no runtime packages; Vite is the only
+  build-time tooling. Do not add runtime dependencies.
 - Colour tokens live in `:root` in `styles.css`. Canvas code uses literal hex matching those
   tokens — CSS variables do not resolve in canvas contexts.
 - Metric units, en-GB date formatting, degrees not radians at API boundaries (`astro.js`

@@ -56,8 +56,12 @@ Not suitable for occultation timing, grazing eclipses, or navigation.
 ```bash
 git clone https://github.com/<user>/moon-lab.git
 cd moon-lab
-python3 -m http.server 8000     # ES modules need a server, not file://
+npm install           # dev-only build tools
+npm run dev           # Vite dev server with live reload
 ```
+
+The files are plain ES modules, so any static server works too (e.g.
+`python3 -m http.server 8000`) — no install needed just to look.
 
 **GitHub Pages:** push to `main`, then Settings → Pages → deploy from `main`, folder `/`.
 `.nojekyll` is included so the `src/` directory is served as-is. Nothing to build for the
@@ -66,12 +70,12 @@ hosted version.
 **Single file:**
 
 ```bash
-node build.mjs        # -> dist/moon-lab.html, ~76 kB, no dependencies
+npm run build         # -> docs/index.html, one self-contained file, ~67 kB, no runtime deps
 ```
 
-`build.mjs` concatenates the modules in dependency order and strips the import/export
-keywords. That works only because the modules use static top-level imports and unique names;
-if you add a module, add it to `ORDER`.
+Vite bundles from `index.html`, following the imports into a real syntax tree (each module
+keeps its own scope), and `vite-plugin-singlefile` inlines the JS and CSS into that one HTML
+file. Config lives in `vite.config.js`. A new module needs no registration — just import it.
 
 ---
 
@@ -80,7 +84,8 @@ if you add a module, add it to `ORDER`.
 ```
 index.html        shell, controls, and the accuracy audit in the drawer
 styles.css
-build.mjs         zero-dependency single-file bundler
+vite.config.js    Vite + singlefile config; `npm run build` -> docs/index.html
+package.json      dev-only build tooling (Vite)
 src/
   astro.js        ephemeris and observing geometry — the only file with real physics
   data.js         star catalogue, coastlines, city list
