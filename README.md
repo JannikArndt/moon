@@ -54,8 +54,8 @@ Not suitable for occultation timing, grazing eclipses, or navigation.
 ## Running it
 
 ```bash
-git clone https://github.com/<user>/moon-lab.git
-cd moon-lab
+git clone https://github.com/JannikArndt/moon.git
+cd moon
 npm install           # dev-only build tools
 npm run dev           # Vite dev server with live reload
 ```
@@ -87,7 +87,7 @@ index.html        shell, controls, and the accuracy audit in the drawer
 styles.css
 vite.config.js    Vite + singlefile config; `npm run build` -> dist/index.html
 package.json      dev-only build tooling (Vite)
-.github/workflows/deploy.yml   builds and publishes to GitHub Pages on push to main
+.github/workflows/deploy.yml   builds and publishes to GitHub Pages on push to main; verifies PRs
 src/
   astro.js        ephemeris and observing geometry — the only file with real physics
   data.js         star catalogue, coastlines, city list

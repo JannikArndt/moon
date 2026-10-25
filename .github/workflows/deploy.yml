@@ -1,44 +1,71 @@
-name: Deploy to Pages
+# GitHub Pages, built by Actions (Vite or any build step). Template from the
+# app-conventions skill. Settings -> Pages -> Source: "GitHub Actions".
+#
+# The build writes dist/version.json = {"build": "<id>"}; after deploying,
+# the last step waits until the live site serves that same id.
+name: Deploy
 
-# Build the Vite single-file bundle and publish it to GitHub Pages on every
-# push to main. No build artifact is committed to the repo — CI produces it.
 on:
   push:
     branches: [main]
-  workflow_dispatch:
+  pull_request:
+  workflow_dispatch: # started by dependabot-merge.yml after it merges
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
-# Let a newer push cancel an in-flight deploy rather than queueing behind it.
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: pages-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      build: ${{ steps.id.outputs.build }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm run build          # -> dist/index.html (single self-contained file)
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
+      - run: npm run verify # includes the build
+      - id: id
+        run: echo "build=$(node -p 'require("./dist/version.json").build')" >> "$GITHUB_OUTPUT"
+      - if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: ./dist
 
   deploy:
-    needs: build
+    needs: verify
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Only this job may publish.
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+      - name: Confirm the new build is live
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          want: ${{ needs.verify.outputs.build }}
+        run: |
+          url="${PAGE_URL%/}/version.json"
+          for i in $(seq 1 60); do
+            got="$(curl -sS --max-time 10 "$url?t=$(date +%s)" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{console.log(JSON.parse(d).build)}catch{}})' || true)"
+            if [ "$got" = "$want" ]; then echo "LIVE: $got"; exit 0; fi
+            echo "attempt $i: serving ${got:-nothing}, want $want"
+            sleep 10
+          done
+          echo "::error::$url never reported build $want"
+          exit 1

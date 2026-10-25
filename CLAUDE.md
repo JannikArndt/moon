@@ -7,12 +7,26 @@ No runtime dependencies and no network calls at runtime; the build uses Vite
 is committed — `dist/` is gitignored.
 Product context and the bug log are in `README.md`; do not duplicate them here.
 
+## Ground rules
+
+- All work happens directly on `main`; no branches, no PRs (Dependabot's PRs
+  merge themselves, see below). A change isn't done until it's live.
+- The ship loop: `npm run verify` (must end `VERIFY: PASS`), commit, push to
+  `main`, then `npm run live -- --wait` (must end `LIVE: <build>`). `npm run ship`
+  does all of it for a committed tree.
+- Live: https://jannikarndt.github.io/moon/ (Settings → Pages → Source is
+  GitHub Actions).
+
 ## Commands
 
 ```bash
 npm install                   # once, pulls the dev-only build tools
+npm run verify                # test + build + check of dist/. Last line: VERIFY: PASS / VERIFY: FAIL (steps)
+npm test                      # test/deploy-contract.test.mjs: pins, permissions, timeouts, no runtime network calls
+npm run live                  # does the site serve this tree's build? --wait polls up to 15 min. Last line: LIVE: <build> / NOT LIVE: …
+npm run ship                  # clean tree -> verify -> push main -> live --wait
 npm run dev                   # Vite dev server with live reload (serves src/ as ES modules)
-npm run build                 # -> dist/index.html (single self-contained file, ~67 kB)
+npm run build                 # -> dist/index.html (single self-contained file, ~67 kB) + dist/version.json
 npm run preview               # serve the built dist/index.html to check the bundle
 ```
 
@@ -95,7 +109,7 @@ Any change to `astro.js` must keep these:
 | Polaris altitude, any instant | within 0.74° of the observer's latitude (its pole distance) |
 | `draw()` cost | ≤ ~3 ms per frame |
 
-There is no test harness checked in. Verifying render code without a browser needs a stubbed
+There is no physics test harness checked in (`test/` holds only the deploy contract). Verifying render code without a browser needs a stubbed
 `document`/canvas; if you build one, put it in `test/` and wire it to these values.
 
 ## Build
@@ -110,6 +124,27 @@ A new module needs no registration — just `import` it from wherever it is used
 Top-level names no longer have to be globally unique (proper scoping), and there is no textual
 import/export stripping to trip over. Keep imports static and top-level so the graph stays
 statically analysable.
+
+### Build id and the live check
+
+`tools/version.mjs` (run by `npm run build`) writes `dist/version.json` =
+`{"build": "<12 hex>"}`, a content hash of `dist/index.html`. A content hash,
+not the commit, so a docs-only push changes nothing. **The app never fetches
+it** (no network calls at runtime, above): only CI and `npm run live` read it.
+`deploy.yml` polls `<page url>/version.json?t=…` after `deploy-pages` until it
+serves the build verify produced, for up to 10 minutes (Pages' CDN caches for
+about that long). A green `deploy-pages` alone does not prove the site changed.
+
+### CI
+
+`.github/workflows/deploy.yml`: `verify` on every push and pull request
+(`npm run verify`), `deploy` only from `main` and the only job with
+`pages: write`. Actions are pinned to SHAs and Node is 24; `test/deploy-contract.test.mjs`
+fails on a floating pin, a missing `permissions:` or `timeout-minutes:`, or a
+network call in `src/`. Dependabot (`.github/dependabot.yml`, majors ignored)
+opens one grouped PR per week for npm and one for actions;
+`.github/workflows/dependabot-merge.yml` verifies, merges and deploys it.
+Versions of Vite are moved on purpose, not by Dependabot.
 
 ## Conventions
 
