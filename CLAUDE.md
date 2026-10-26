@@ -3,7 +3,7 @@
 Browser instrument showing the Moon's real position, size, colour and geometry.
 No runtime dependencies; the build uses Vite (dev-only). Network calls are
 allowed (owner decision 2026-10-26, which retired the old "no network calls at
-runtime" rule); today none is made, and `test/deploy-contract.test.mjs` fails on
+runtime" rule); the only one is the page asking for its own `version.json`, and `test/deploy-contract.test.mjs` fails on
 any `fetch` in `src/` that is not a same-origin relative `version.json`, so a
 third-party call needs a deliberate change there. GitHub Pages is published by CI: `.github/workflows/deploy.yml` runs
 `npm run build` on every push to `main` and deploys the bundle. No build artifact
@@ -130,14 +130,30 @@ statically analysable.
 
 ### Build id and the live check
 
-`tools/version.mjs` (run by `npm run build`) writes `dist/version.json` =
-`{"build": "<12 hex>"}`, a content hash of `dist/index.html`. A content hash,
-not the commit, so a docs-only push changes nothing. **The app never fetches
-it** today: only CI and `npm run live` read it. If the page ever does, it is
-the one same-origin fetch the contract test allows.
-`deploy.yml` polls `<page url>/version.json?t=…` after `deploy-pages` until it
-serves the build verify produced, for up to 10 minutes (Pages' CDN caches for
-about that long). A green `deploy-pages` alone does not prove the site changed.
+`tools/version.mjs` (run by `npm run build`) hashes everything in `dist/` except
+`version.json` (the page's `<meta name="app-build">` reset to `dev` first, so
+the id never depends on itself), writes the id into that meta and into
+`dist/version.json` = `{"build": "<12 hex>"}`. A content hash, not the commit,
+so a docs-only push changes nothing. `deploy.yml` polls
+`<page url>/version.json?t=…` after `deploy-pages` until it serves the build
+verify produced, for up to 10 minutes (Pages' CDN caches for about that long).
+A green `deploy-pages` alone does not prove the site changed. The open page
+reads the same file itself (next section).
+
+### Open copies update themselves
+
+`src/fresh.js` (started from the end of `main.js`): the page knows its build
+from the meta and fetches `version.json?t=…` (`no-store`) on
+`visibilitychange` to visible, `pageshow`, `focus` and every 10 min. A
+different build reloads at a quiet moment, retrying every 2 s while busy.
+`isQuiet` is defined in `main.js`: not dragging the stage or the timeline, not
+playing, date popup and drawer closed, not locating; **extend it when the app
+grows new transient state**. Never in the page's first 20 s, never twice for
+the same build (`sessionStorage` `moon:reloaded-for`; when storage is
+unavailable, as in the sandboxed iframe, there is no automatic reload at all
+rather than a risk of a loop), never inside an iframe, and an unstamped page
+(`dev`) never checks. Nothing in the app is saved across a reload, which is
+why a reload loses nothing.
 
 ### CI
 

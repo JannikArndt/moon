@@ -48,8 +48,9 @@ test("CLAUDE.md exists and names every npm script", () => {
   for (const s of scripts) assert.match(claude, new RegExp(`npm (run )?${s}\\b`), `CLAUDE.md does not mention npm run ${s}`);
 });
 
-test("the build writes version.json for the live check; src/ only fetches the app's own relative version.json", () => {
+test("the build writes version.json for the live check; the page knows its build; src/ only fetches the app's own relative version.json", () => {
   assert.match(read("package.json"), /"build":\s*"vite build && node tools\/version\.mjs"/);
+  assert.match(read("index.html"), /<meta name="app-build" content="dev">/, "index.html must carry the app-build meta for tools/version.mjs to stamp");
   // Network calls are allowed (owner decision 2026-10-26), but a third-party origin
   // needs a deliberate change here: only same-origin relative version.json passes.
   for (const f of readdirSync(join(ROOT, "src"))) {

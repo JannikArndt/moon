@@ -1,5 +1,5 @@
-// Minimal sanity check of what the build produced: one self-contained page
-// (no external script or stylesheet left behind) and a matching version.json.
+// Sanity check of what the build produced: a page with its JS and CSS inlined, the
+// icons and manifest as real files, and version.json = the build stamped in the page.
 import { existsSync, readFileSync } from "node:fs";
 import { buildId } from "./version.mjs";
 
@@ -10,3 +10,4 @@ const html = readFileSync("dist/index.html", "utf8");
 if (/<script[^>]+\bsrc=/.test(html) || /<link[^>]+rel=["']?stylesheet/.test(html)) fail("dist/index.html is not self-contained");
 const { build } = JSON.parse(readFileSync("dist/version.json", "utf8"));
 if (build !== buildId()) fail("dist/version.json does not match dist/index.html");
+if (new RegExp(`<meta name="app-build" content="${build}"`).test(html) === false) fail("dist/index.html carries a different app-build than version.json");

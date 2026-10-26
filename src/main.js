@@ -8,6 +8,7 @@ import {hitTest} from "./draw.js";
 import {renderSky} from "./sky.js";
 import {renderEcl} from "./orrery.js";
 import {renderTimeline,tlMap} from "./timeline.js";
+import {startFresh} from "./fresh.js";
 import {renderYearChart,renderTilt,yearBars} from "./charts.js";
 
 /* ─────────────── draw / time ─────────────── */
@@ -205,4 +206,8 @@ function idle(){
 $("place").value=0;
 setT(Date.now());
 idle();
+
+/* A new build reloads the page only when nobody is touching the time: not dragging
+   the stage or the timeline, not playing, no popup or drawer open, no locating. */
+startFresh(()=>!drag&&!tlDrag&&!S.playing&&pop.hidden&&!drawerOpen&&!$("locate").disabled);
 
