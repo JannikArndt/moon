@@ -48,7 +48,7 @@ test("CLAUDE.md exists and names every npm script", () => {
   for (const s of scripts) assert.match(claude, new RegExp(`npm (run )?${s}\\b`), `CLAUDE.md does not mention npm run ${s}`);
 });
 
-test("the build writes version.json for the live check; the page knows its build; src/ only fetches the app's own relative version.json", () => {
+test("the build stamps the page and writes version.json; src/ only fetches the app's own version.json", () => {
   assert.match(read("package.json"), /"build":\s*"vite build && node tools\/version\.mjs"/);
   assert.match(read("index.html"), /<meta name="app-build" content="dev">/, "index.html must carry the app-build meta for tools/version.mjs to stamp");
   // Network calls are allowed (owner decision 2026-10-26), but a third-party origin
@@ -60,4 +60,38 @@ test("the build writes version.json for the live check; the page knows its build
       assert.match(m[1], /^["'`]version\.json(\?|["'`])/, `src/${f}: fetch(${m[1]}…) is not the app's own relative version.json`);
     }
   }
+});
+
+test("Home Screen: head lines, PNG icons of the stated size, a manifest with a maskable icon", () => {
+  const html = read("index.html");
+  for (const re of [
+    /<meta name="viewport"[^>]*viewport-fit=cover/,
+    /<meta name="theme-color" content="#080D1A"/,
+    /<meta name="apple-mobile-web-app-capable" content="yes"/,
+    /<meta name="mobile-web-app-capable" content="yes"/,
+    /<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/,
+    /<link rel="manifest" href="manifest\.webmanifest"/,
+  ]) assert.match(html, re);
+  const title = html.match(/<meta name="apple-mobile-web-app-title" content="([^"]*)"/)?.[1];
+  assert.ok(title && title.length <= 12, "apple-mobile-web-app-title missing or longer than 12 characters");
+  const size = (rel) => {
+    assert.ok(has(`public/${rel}`), `public/${rel} is missing`);
+    const b = readFileSync(join(ROOT, "public", rel));
+    assert.equal(b.subarray(1, 4).toString(), "PNG", `${rel} is not a PNG`);
+    assert.equal(b[25], 2, `${rel} must be opaque RGB`);
+    return `${b.readUInt32BE(16)}x${b.readUInt32BE(20)}`;
+  };
+  const touch = html.match(/<link rel="apple-touch-icon" href="([^"]+\.png)"/)?.[1];
+  assert.ok(touch, "apple-touch-icon must point at a .png");
+  assert.equal(size(touch), "180x180");
+  const fav = html.match(/<link rel="icon" href="([^"]+\.png)" sizes="32x32"/)?.[1];
+  assert.ok(fav, "rel=icon must be a 32x32 .png");
+  assert.equal(size(fav), "32x32");
+  const manifest = JSON.parse(read("public/manifest.webmanifest"));
+  assert.equal(manifest.display, "standalone");
+  assert.equal(manifest.start_url, "./");
+  assert.equal(manifest.scope, "./");
+  assert.ok(manifest.short_name.length <= 12);
+  for (const icon of manifest.icons) assert.equal(size(icon.src), icon.sizes, `${icon.src} is not ${icon.sizes}`);
+  assert.ok(manifest.icons.some((i) => i.purpose === "maskable"), "no maskable icon");
 });

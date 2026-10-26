@@ -7,5 +7,6 @@ import { viteSingleFile } from "vite-plugin-singlefile";
 // dist/index.html. CI (.github/workflows/deploy.yml) builds this and publishes
 // it to GitHub Pages; dist/ is gitignored and never committed.
 export default defineConfig({
+  base: "./", // served under /moon/ on Pages; relative so icons and version.json resolve there
   plugins: [viteSingleFile()],
 });

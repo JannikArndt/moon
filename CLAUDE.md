@@ -3,9 +3,9 @@
 Browser instrument showing the Moon's real position, size, colour and geometry.
 No runtime dependencies; the build uses Vite (dev-only). Network calls are
 allowed (owner decision 2026-10-26, which retired the old "no network calls at
-runtime" rule); the only one is the page asking for its own `version.json`, and `test/deploy-contract.test.mjs` fails on
-any `fetch` in `src/` that is not a same-origin relative `version.json`, so a
-third-party call needs a deliberate change there. GitHub Pages is published by CI: `.github/workflows/deploy.yml` runs
+runtime" rule); today the only one is the page asking for its own
+`version.json`, and `test/deploy-contract.test.mjs` fails on any other `fetch`
+in `src/`, so a third-party call needs a deliberate change there. GitHub Pages is published by CI: `.github/workflows/deploy.yml` runs
 `npm run build` on every push to `main` and deploys the bundle. No build artifact
 is committed — `dist/` is gitignored.
 Product context and the bug log are in `README.md`; do not duplicate them here.
@@ -25,11 +25,12 @@ Product context and the bug log are in `README.md`; do not duplicate them here.
 ```bash
 npm install                   # once, pulls the dev-only build tools
 npm run verify                # test + build + check of dist/. Last line: VERIFY: PASS / VERIFY: FAIL (steps)
-npm test                      # test/deploy-contract.test.mjs: pins, permissions, timeouts, src/ fetches only same-origin version.json
+npm test                      # test/deploy-contract.test.mjs: pins, permissions, timeouts, src/ fetches only version.json, Home Screen head and icons
 npm run live                  # does the site serve this tree's build? --wait polls up to 15 min. Last line: LIVE: <build> / NOT LIVE: …
 npm run ship                  # clean tree -> verify -> push main -> live --wait
 npm run dev                   # Vite dev server with live reload (serves src/ as ES modules)
-npm run build                 # -> dist/index.html (single self-contained file, ~67 kB) + dist/version.json
+npm run build                 # -> dist/index.html (JS and CSS inlined, ~67 kB) + dist/version.json + icons/ + manifest.webmanifest
+npm run icons                 # rewrite public/icons/*.png from scripts/make-icons.mjs (committed; run after changing the picture)
 npm run preview               # serve the built dist/index.html to check the bundle
 ```
 
@@ -119,7 +120,7 @@ There is no physics test harness checked in (`test/` holds only the deploy contr
 
 `vite build` (via `npm run build`) bundles from the `index.html` entry, following the module
 imports into a real syntax tree — each module keeps its own scope. `vite-plugin-singlefile`
-then inlines the bundled JS and CSS into one self-contained `dist/index.html`. Config is
+then inlines the bundled JS and CSS into `dist/index.html`. Config is
 `vite.config.js`. CI (`.github/workflows/deploy.yml`) runs this and publishes `dist/` to
 GitHub Pages; the artifact is never committed.
 
@@ -155,13 +156,25 @@ rather than a risk of a loop), never inside an iframe, and an unstamped page
 (`dev`) never checks. Nothing in the app is saved across a reload, which is
 why a reload loses nothing.
 
+### Home Screen
+
+`public/` holds `manifest.webmanifest` and `icons/*.png`; Vite copies them to
+`dist/` as real files (the singlefile plugin inlines only JS and CSS), and the
+build id hashes them with everything else. Paths are relative (`base: "./"`,
+`start_url: "./"`) because the site lives under `/moon/`. The PNGs are drawn in
+code by `scripts/make-icons.mjs` (`npm run icons`) from the `:root` tokens and
+committed: crescent, faint unlit disc, horizon band, full bleed and opaque; the
+maskable copy shrinks the picture into the middle 80 %. After changing the
+picture run `npm run icons` and look at the 180 px PNG at 60 px. The
+deploy-contract test holds the head lines, icon sizes and manifest.
+
 ### CI
 
 `.github/workflows/deploy.yml`: `verify` on every push and pull request
 (`npm run verify`), `deploy` only from `main` and the only job with
 `pages: write`. Actions are pinned to SHAs and Node is 24; `test/deploy-contract.test.mjs`
 fails on a floating pin, a missing `permissions:` or `timeout-minutes:`, or a
-`fetch` in `src/` that is not the app's own `version.json`. Dependabot (`.github/dependabot.yml`, majors ignored)
+network call in `src/`. Dependabot (`.github/dependabot.yml`, majors ignored)
 opens one grouped PR per week for npm and one for actions;
 `.github/workflows/dependabot-merge.yml` verifies, merges and deploys it.
 Versions of Vite are moved on purpose, not by Dependabot.

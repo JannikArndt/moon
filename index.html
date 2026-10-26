@@ -5,13 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Moon Lab</title>
 <link rel="stylesheet" href="./styles.css">
-<meta name="app-build" content="dev">
-<meta name="apple-mobile-web-app-title" content="Moon Lab">
+<meta name="apple-mobile-web-app-title" content="Moon">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#080D1A">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23080D1A'/%3E%3Ccircle cx='104' cy='84' r='42' fill='%23E9E7DF'/%3E%3Ccircle cx='80' cy='78' r='40' fill='%23080D1A'/%3E%3Cpath d='M0 150 Q90 128 180 150 L180 180 L0 180Z' fill='%23132135'/%3E%3C/svg%3E">
+<meta name="app-build" content="dev">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
 
 </head>
 <body>
@@ -82,7 +84,7 @@
   <p class="n">The Moon's orbit is tilted 5.1°, so at new moon its shadow usually passes above or below Earth. Only near a crossing point can an eclipse happen — twice a year, not twelve times.</p>
 
   <h3>Where the numbers come from</h3>
-  <p class="n">No data is fetched or pre-tabulated. Every position is evaluated in the browser from series expansions, for the exact instant on the timeline. That is why you can scrub to any date in any year and it still answers — and why everything below is worth being precise about.</p>
+  <p class="n">No data is fetched or pre-tabulated (the page only asks whether a newer build of itself exists). Every position is evaluated in the browser from series expansions, for the exact instant on the timeline. That is why you can scrub to any date in any year and it still answers — and why everything below is worth being precise about.</p>
 
   <h3>Positions</h3>
   <p class="n"><b>Moon:</b> Meeus, <i>Astronomical Algorithms</i> ch. 47 — the full 60-term longitude and distance table, the 60-term latitude table, and the A₁/A₂/A₃ additive terms. Meeus quotes about 10″ in longitude and 4″ in latitude. This implementation reproduces his worked example 47.a to every published digit.</p>

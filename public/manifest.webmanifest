@@ -1,0 +1,15 @@
+{
+  "name": "Moon",
+  "short_name": "Moon",
+  "description": "The Moon's real position, size, colour and geometry.",
+  "display": "standalone",
+  "start_url": "./",
+  "scope": "./",
+  "theme_color": "#080D1A",
+  "background_color": "#080D1A",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

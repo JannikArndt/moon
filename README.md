@@ -32,7 +32,7 @@ dotted lines — to have it name itself. Tap the date to jump anywhere.
 
 ## Honesty
 
-Every position is computed live from series expansions; no data is fetched or pre-tabulated.
+Every position is computed live from series expansions; no data is fetched or pre-tabulated (the page only asks the server whether a newer build of itself exists).
 The **more** drawer carries a full audit of what is calculated, what is approximated and what
 is simply drawn. The short version:
 
@@ -67,14 +67,14 @@ The files are plain ES modules, so any static server works too (e.g.
 every push to `main` and deploys the bundle — Settings → Pages → Source is **GitHub Actions**.
 Nothing to build or commit by hand; just push.
 
-**Single file:**
+**Build:**
 
 ```bash
-npm run build         # -> dist/index.html, one self-contained file, ~67 kB, no runtime deps
+npm run build         # -> dist/index.html, JS and CSS inlined, ~67 kB, no runtime deps
 ```
 
 Vite bundles from `index.html`, following the imports into a real syntax tree (each module
-keeps its own scope), and `vite-plugin-singlefile` inlines the JS and CSS into that one HTML
+keeps its own scope), and `vite-plugin-singlefile` inlines the JS and CSS into the HTML page (icons and the manifest are copied beside it)
 file. Config lives in `vite.config.js`. A new module needs no registration — just import it.
 `dist/` is gitignored; the same build runs in CI to produce the hosted site.
 
