@@ -32,7 +32,7 @@ dotted lines — to have it name itself. Tap the date to jump anywhere.
 
 ## Honesty
 
-Every position is computed live from series expansions; nothing is fetched or pre-tabulated.
+Every position is computed live from series expansions; no data is fetched or pre-tabulated.
 The **more** drawer carries a full audit of what is calculated, what is approximated and what
 is simply drawn. The short version:
 

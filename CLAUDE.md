@@ -1,8 +1,11 @@
 # CLAUDE.md
 
 Browser instrument showing the Moon's real position, size, colour and geometry.
-No runtime dependencies and no network calls at runtime; the build uses Vite
-(dev-only). GitHub Pages is published by CI: `.github/workflows/deploy.yml` runs
+No runtime dependencies; the build uses Vite (dev-only). Network calls are
+allowed (owner decision 2026-10-26, which retired the old "no network calls at
+runtime" rule); today none is made, and `test/deploy-contract.test.mjs` fails on
+any `fetch` in `src/` that is not a same-origin relative `version.json`, so a
+third-party call needs a deliberate change there. GitHub Pages is published by CI: `.github/workflows/deploy.yml` runs
 `npm run build` on every push to `main` and deploys the bundle. No build artifact
 is committed — `dist/` is gitignored.
 Product context and the bug log are in `README.md`; do not duplicate them here.
@@ -22,7 +25,7 @@ Product context and the bug log are in `README.md`; do not duplicate them here.
 ```bash
 npm install                   # once, pulls the dev-only build tools
 npm run verify                # test + build + check of dist/. Last line: VERIFY: PASS / VERIFY: FAIL (steps)
-npm test                      # test/deploy-contract.test.mjs: pins, permissions, timeouts, no runtime network calls
+npm test                      # test/deploy-contract.test.mjs: pins, permissions, timeouts, src/ fetches only same-origin version.json
 npm run live                  # does the site serve this tree's build? --wait polls up to 15 min. Last line: LIVE: <build> / NOT LIVE: …
 npm run ship                  # clean tree -> verify -> push main -> live --wait
 npm run dev                   # Vite dev server with live reload (serves src/ as ES modules)
@@ -130,7 +133,8 @@ statically analysable.
 `tools/version.mjs` (run by `npm run build`) writes `dist/version.json` =
 `{"build": "<12 hex>"}`, a content hash of `dist/index.html`. A content hash,
 not the commit, so a docs-only push changes nothing. **The app never fetches
-it** (no network calls at runtime, above): only CI and `npm run live` read it.
+it** today: only CI and `npm run live` read it. If the page ever does, it is
+the one same-origin fetch the contract test allows.
 `deploy.yml` polls `<page url>/version.json?t=…` after `deploy-pages` until it
 serves the build verify produced, for up to 10 minutes (Pages' CDN caches for
 about that long). A green `deploy-pages` alone does not prove the site changed.
@@ -141,7 +145,7 @@ about that long). A green `deploy-pages` alone does not prove the site changed.
 (`npm run verify`), `deploy` only from `main` and the only job with
 `pages: write`. Actions are pinned to SHAs and Node is 24; `test/deploy-contract.test.mjs`
 fails on a floating pin, a missing `permissions:` or `timeout-minutes:`, or a
-network call in `src/`. Dependabot (`.github/dependabot.yml`, majors ignored)
+`fetch` in `src/` that is not the app's own `version.json`. Dependabot (`.github/dependabot.yml`, majors ignored)
 opens one grouped PR per week for npm and one for actions;
 `.github/workflows/dependabot-merge.yml` verifies, merges and deploys it.
 Versions of Vite are moved on purpose, not by Dependabot.
@@ -167,7 +171,8 @@ Do not "fix" these without asking. Each is a decision, not an oversight.
   sufficient, and a half-right prediction is worse than none.
 - **External geocoding.** Naming a located position uses the embedded `CITIES` list so
   coordinates never leave the browser. A gazetteer lookup means sending someone's position to
-  a third party; that needs explicit consent, not a silent fetch.
+  a third party; that needs explicit consent, not a silent fetch. (This is about privacy, not
+  the network: network calls are allowed, sending a position out is not.)
 - **Exaggerated orrery scales.** Earth is ~27× oversized against the Moon's orbit and the
   distance swing is stretched ~5×. Intentional, and disclosed.
 

@@ -48,7 +48,15 @@ test("CLAUDE.md exists and names every npm script", () => {
   for (const s of scripts) assert.match(claude, new RegExp(`npm (run )?${s}\\b`), `CLAUDE.md does not mention npm run ${s}`);
 });
 
-test("the build writes version.json for the live check, and the page never fetches it", () => {
+test("the build writes version.json for the live check; src/ only fetches the app's own relative version.json", () => {
   assert.match(read("package.json"), /"build":\s*"vite build && node tools\/version\.mjs"/);
-  for (const f of readdirSync(join(ROOT, "src"))) assert.doesNotMatch(read(`src/${f}`), /\bfetch\s*\(|XMLHttpRequest|sendBeacon/, `src/${f} makes a network call`);
+  // Network calls are allowed (owner decision 2026-10-26), but a third-party origin
+  // needs a deliberate change here: only same-origin relative version.json passes.
+  for (const f of readdirSync(join(ROOT, "src"))) {
+    const src = read(`src/${f}`);
+    assert.doesNotMatch(src, /XMLHttpRequest|sendBeacon|WebSocket|EventSource|import\s*\(\s*["'`]https?:/, `src/${f} uses a network API other than fetch`);
+    for (const m of src.matchAll(/\bfetch\s*\(\s*(.{0,40})/g)) {
+      assert.match(m[1], /^["'`]version\.json(\?|["'`])/, `src/${f}: fetch(${m[1]}…) is not the app's own relative version.json`);
+    }
+  }
 });
